@@ -1,0 +1,262 @@
+/* --- LAYOUT DA APP (DARK MODE) --- */
+.App {
+    /* Altera a largura máxima para um ecrã de desktop/tablet */
+    max-width: 1000px;
+    width: 100%;
+
+    /* A altura agora é automática, não fixa */
+    height: auto;
+    min-height: 500px; /* Uma altura mínima */
+    margin: 2rem auto; /* Deixa margem no desktop */
+
+    /* O resto do estilo do "card" escuro está igual */
+    background-color: #34495e;
+    color: #ecf0f1;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- CABEÇALHO --- */
+/* (Este estilo pode ficar exatamente igual ao de antes) */
+header {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+    background-color: #34495e;
+    border-bottom: 1px solid #4a657c;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: left;
+    color: #ffffff;
+    margin: 0;
+    padding-left: 1.5rem; /* Alinha com o padding do wrapper */
+}
+
+
+/* --- O NOVO CONTENTOR DE COLUNAS --- */
+.content-wrapper {
+    display: flex;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+
+    /* Por defeito (Mobile), fica em coluna (um em cima do outro).
+      Isto é bom para PWA em telemóveis!
+    */
+    flex-direction: column;
+}
+
+/* --- ÁREA DO CALENDÁRIO (Coluna 1) --- */
+main {
+    /* O calendário NÃO vai crescer, vai ter o seu tamanho natural */
+    flex-shrink: 0;
+    background-color: #34495e; /* Fundo escuro */
+}
+
+/* --- LISTA DE EVENTOS (Coluna 2) --- */
+.event-list-header {
+    display: flex;
+    justify-content: space-between; /* Título na esquerda, botão na direita */
+    align-items: center;
+    border-bottom: 1px solid #4a657c;
+    padding-bottom: 8px;
+    margin-bottom: 1rem; /* Espaço antes da lista */
+}
+
+.event-list-header h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #95a5a6;
+    margin: 0; /* Remove margem padrão do h3 */
+}
+
+/* O novo botão "+ Adicionar Evento" */
+.open-modal-btn {
+    background-color: #4a657c; /* Mesmo cinza dos botões prev/next */
+    color: #ecf0f1;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.open-modal-btn:hover {
+    background-color: #5e7a91;
+}
+
+/* Estilo do botão quando está desabilitado */
+.open-modal-btn:disabled {
+    background-color: #3e5163; /* Mais escuro/esbatido */
+    color: #7f8c8d;
+    cursor: not-allowed;
+}
+
+
+/* (O resto dos teus estilos .no-events-message, .event-item, etc. continua igual) */
+.no-events-message {
+    color: #95a5a6;
+    text-align: center;
+    padding-top: 2rem;
+}
+
+
+/* --- A MÁGICA (Media Query para Desktop) ---
+  Quando o ecrã tiver 768px de largura ou mais...
+*/
+@media (min-width: 768px) {
+
+    /* 1. O wrapper vira duas colunas (lado a lado) */
+    .content-wrapper {
+        flex-direction: row;
+    }
+
+    /* 2. O calendário ocupa 65% do espaço */
+    main {
+        flex-basis: 65%;
+        padding-right: 1.5rem; /* Espaço entre as colunas */
+    }
+
+    /* 3. A lista de eventos ocupa 35% */
+    .event-list-container {
+        flex-basis: 35%;
+        margin-top: 0; /* Remove a margem do mobile */
+        padding-top: 0;
+        border-top: none; /* Remove a linha do mobile */
+
+        /* Adiciona scroll SÓ à lista de eventos se ela for muito longa */
+        max-height: 500px; /* Ajusta conforme necessário */
+        overflow-y: auto;
+    }
+
+    header h1 {
+        padding-left: 1.5rem;
+    }
+}
+
+
+/* =========================================================
+--- ESTILOS DO FULLCALENDAR E DA LISTA DE EVENTOS ---
+(Tudo o que vem a seguir é EXATAMENTE o que já tínhamos
+ e não precisa de ser mudado!)
+=========================================================
+*/
+
+/* --- ESTILOS DO FULLCALENDAR (DARK MODE) --- */
+main .fc {
+    --fc-border-color: transparent;
+}
+
+main .fc .fc-col-header-cell {
+    background-color: transparent;
+    border: none;
+}
+
+main .fc .fc-toolbar-title {
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+main .fc .fc-button {
+    background: #4a657c;
+    border: none;
+    box-shadow: none;
+    opacity: 0.8;
+}
+
+main .fc .fc-button:hover {
+    background: #5e7a91;
+    opacity: 1;
+}
+
+main .fc .fc-col-header-cell-cushion {
+    color: #95a5a6;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding-bottom: 10px;
+}
+
+main .fc .fc-daygrid-day-top {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5em;
+}
+
+main .fc .fc-daygrid-day-number {
+    color: #ecf0f1;
+    padding: 5px;
+    text-decoration: none;
+    float: none;
+}
+
+main .fc .fc-day-other .fc-daygrid-day-number {
+    color: #7f8c8d;
+}
+
+/* --- "HOJE" (Estilo Laranja) --- */
+main .fc .fc-day-today {
+    background-color: transparent !important;
+}
+
+main .fc .fc-day-today .fc-daygrid-day-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f39c12;
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.7);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    float: none;
+}
+
+/* --- "PONTO DE MARCAÇÃO" (Evento) --- */
+main .fc .fc-daygrid-dot {
+    background-color: #95a5a6;
+    border: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 2px;
+}
+
+
+/* --- SECÇÃO: LISTA DE EVENTOS (Estilos) --- */
+.event-list-container h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #95a5a6;
+    border-bottom: 1px solid #4a657c;
+    padding-bottom: 8px;
+    margin-top: 0;
+}
+
+.no-events-message {
+    color: #95a5a6;
+    text-align: center;
+    padding-top: 2rem;
+}
+
+.event-item {
+    background-color: #0097e6;
+    color: #ffffff;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.event-item .event-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
