@@ -1,98 +1,81 @@
-import { useState } from 'react'
+import {useEffect, useState} from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction'
+import interactionPlugin, {type DateClickArg} from '@fullcalendar/interaction'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br';
 import './App.css'
-import EventModal from './components/EventModal';
-import { type DayCellMountArg } from '@fullcalendar/core'
 
-// Define o tipo de um Evento (igual a antes)
 interface MyEvent {
     title: string;
     start: string;
+    end?: string;
     allDay: boolean;
 }
 
 function App() {
-    const [events, setEvents] = useState<MyEvent[]>([
-        { title: 'Ir trabalhar!', start: '2025-10-31', allDay: true },
-        { title: 'Encontrar amigos!', start: '2025-10-31', allDay: true },
+    const [events] = useState<MyEvent[]>([
+        {title: 'Ir trabalhar!', start: '2025-11-04T09:00:00', end: '2025-11-04T18:00:00', allDay: false},
+        {title: 'Encontrar amigos!', start: '2025-11-03T19:30:00', end: '2025-11-03T22:00:00', allDay: false},
     ]);
     const [selectedDayEvents, setSelectedDayEvents] = useState<MyEvent[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-
-    /**
-     * 1. Função handleDateClick (SIMPLIFICADA)
-     * Agora APENAS seleciona a data e filtra a lista.
-     */
-    const handleDateClick = (arg: DateClickArg) => {
-
-        // 1. Guarda a data que o utilizador clicou
-        setSelectedDate(arg.dateStr);
-
-        // 2. Filtra a lista principal de eventos
-        const eventsOnThisDay = events.filter(event => {
-            return event.start.split('T')[0] === arg.dateStr;
+    const handleDateClick = (info: DateClickArg) => {
+        document.querySelectorAll('.fc-day').forEach(day => {
+            day.classList.remove('fc-day-selected');
         });
 
-        // 3. Atualiza o estado dos eventos selecionados
+        info.dayEl.classList.add('fc-day-selected');
+        setSelectedDate(info.dateStr);
+
+        const eventsOnThisDay = events.filter(event => {
+            return event.start.split('T')[0] === info.dateStr;
+        });
+
         setSelectedDayEvents(eventsOnThisDay);
+    };
 
-        // NÃO ABRE MAIS O MODAL
-    }
+    useEffect(() => {
+        setSelectedDayEvents(events);
+    }, [events]);
 
-    /**
-     * 2. NOVA função para ser chamada pelo BOTÃO
-     */
-    const openAddEventModal = () => {
-        // Só abre o modal se o utilizador já tiver clicado num dia
-        if (selectedDate) {
-            setIsModalOpen(true);
-        } else {
-            // (Opcional) Poderíamos dar um alerta, mas o botão desabilitado é melhor
-            alert("Por favor, selecione um dia no calendário primeiro.");
-        }
-    }
-
-    /**
-     * 3. Função handleAddNewEvent (vinda do modal)
-     * Esta função continua EXATAMENTE IGUAL a antes.
-     * Ela funciona perfeitamente pois lê o 'selectedDate' do estado.
-     */
-    const handleAddNewEvent = (title: string) => {
-        if (!selectedDate) return;
-
-        const newEvent = {
-            title: title,
-            start: selectedDate,
-            allDay: true
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const calendarEl = document.querySelector('.fc');
+            if (calendarEl && !calendarEl.contains(event.target as Node)) {
+                document.querySelectorAll('.fc-day').forEach( day => {
+                    day.classList.remove('fc-day-selected');
+                });
+                setSelectedDate(null);
+                setSelectedDayEvents(events);
+            }
         };
 
-        const updatedEvents = [...events, newEvent];
-        setEvents(updatedEvents);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        };
+    }, [events])
 
-        const eventsOnThisDay = updatedEvents.filter(event => {
-            return event.start.split('T')[0] === selectedDate;
-        });
-        setSelectedDayEvents(eventsOnThisDay);
+    const formatEventTime = (event: MyEvent) => {
+        const startDate = new Date(event.start);
 
-        setIsModalOpen(false);
-    }
-
-    const handleDayCellMount = (arg: DayCellMountArg) => {
-        if (arg.dateStr === selectedDate) {
-            arg.el.classList.add('fc-day-active');
-        } else {
-            // Se NÃO é a selecionada, remove a classe
-            // (Isto é importante para "limpar" a bola laranja do dia anterior)
-            arg.el.classList.remove('fc-day-active');
+        if (event.allDay) {
+            return 'Dia inteiro';
         }
-    }
 
-    // O JSX (return) fica quase igual
+        const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+        const startTime = startDate.toLocaleTimeString('pt-BR', timeOptions);
+
+        return startTime;
+    };
+
+    const formatEventDate = (event: MyEvent) => {
+        const startDate = new Date(event.start);
+        const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        return startDate.toLocaleDateString('pt-BR', dateOptions);
+    };
+
     return (
         <div className="App">
             <header>
@@ -100,69 +83,52 @@ function App() {
             </header>
 
             <div className="content-wrapper">
-
-                {/* Coluna 1: O Calendário (igual) */}
                 <main>
                     <FullCalendar
                         plugins={[dayGridPlugin, interactionPlugin]}
-                        initialView="dayGridMonth"
                         locale={ptBrLocale}
+                        initialView="dayGridMonth"
                         height="auto"
-                        eventDisplay="dot" // Garante que só mostra o ponto
+                        eventDisplay="list-item"
                         weekends={true}
                         events={events}
                         selectable={true}
-                        dateClick={handleDateClick} // Agora chama a função modificada
-                        dayCellDidMount={handleDayCellMount}
+                        dateClick={handleDateClick}
                         headerToolbar={{
-                            left: '',
+                            left: 'prev',
                             center: 'title',
-                            right: 'prev,next'
+                            right: 'next'
                         }}
                     />
                 </main>
 
-                {/* Coluna 2: A Lista de Eventos (MODIFICADA) */}
                 <section className="event-list-container">
-
-                    {/* --- NOVO HEADER PARA A LISTA --- */}
                     <div className="event-list-header">
                         <h3>Eventos do dia</h3>
-                        <button
-                            className="open-modal-btn"
-                            onClick={openAddEventModal}
-                            disabled={!selectedDate} /* Desabilitado se nenhum dia for selecionado */
-                        >
-                            + Adicionar Evento
-                        </button>
                     </div>
 
-                    {/* O resto da lista continua igual */}
                     <div className="event-list">
                         {selectedDayEvents.length > 0 ? (
                             selectedDayEvents.map((event, index) => (
                                 <div key={index} className="event-item">
-                                    <span className="event-title">{event.title}</span>
+                                    <div className="event-content">
+                                        <img src="/star-icon.png" alt="image" className="imagem-favorito" />
+                                        <div className="event-title">{event.title}</div>
+                                    </div>
+                                    <div className="event-datetime">
+                                        <div>{formatEventDate(event)}</div>
+                                        <div>{formatEventTime(event)}</div>
+                                    </div>
                                 </div>
                             ))
                         ) : (
-                            // Mensagem se não houver eventos (ou nenhum dia selecionado)
                             <p className="no-events-message">
                                 {selectedDate ? "Nenhum evento para este dia." : "Selecione um dia para ver os eventos."}
                             </p>
                         )}
                     </div>
                 </section>
-
             </div>
-
-            {/* --- 5. Renderiza o Modal (ele está escondido por defeito) --- */}
-            <EventModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onAddEvent={handleAddNewEvent}
-            />
-
         </div>
     )
 }

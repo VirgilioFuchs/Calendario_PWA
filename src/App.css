@@ -1,27 +1,18 @@
-/* --- LAYOUT DA APP (DARK MODE) --- */
 .App {
-    /* Altera a largura máxima para um ecrã de desktop/tablet */
     max-width: 1000px;
     width: 100%;
-
-    /* A altura agora é automática, não fixa */
     height: auto;
-    min-height: 500px; /* Uma altura mínima */
-    margin: 2rem auto; /* Deixa margem no desktop */
-
-    /* O resto do estilo do "card" escuro está igual */
+    min-height: 500px;
+    margin: 2rem auto;
     background-color: #34495e;
     color: #ecf0f1;
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     overflow: hidden;
-
     display: flex;
     flex-direction: column;
 }
 
-/* --- CABEÇALHO --- */
-/* (Este estilo pode ficar exatamente igual ao de antes) */
 header {
     flex-shrink: 0;
     padding: 1.5rem 1rem;
@@ -35,103 +26,57 @@ header h1 {
     text-align: left;
     color: #ffffff;
     margin: 0;
-    padding-left: 1.5rem; /* Alinha com o padding do wrapper */
+    padding-left: 1.5rem;
 }
 
-
-/* --- O NOVO CONTENTOR DE COLUNAS --- */
 .content-wrapper {
     display: flex;
     padding: 1rem 1.5rem 1.5rem 1.5rem;
-
-    /* Por defeito (Mobile), fica em coluna (um em cima do outro).
-      Isto é bom para PWA em telemóveis!
-    */
     flex-direction: column;
 }
 
-/* --- ÁREA DO CALENDÁRIO (Coluna 1) --- */
 main {
-    /* O calendário NÃO vai crescer, vai ter o seu tamanho natural */
     flex-shrink: 0;
-    background-color: #34495e; /* Fundo escuro */
+    background-color: #34495e;
 }
 
-/* --- LISTA DE EVENTOS (Coluna 2) --- */
 .event-list-header {
     display: flex;
-    justify-content: space-between; /* Título na esquerda, botão na direita */
     align-items: center;
     border-bottom: 1px solid #4a657c;
     padding-bottom: 8px;
-    margin-bottom: 1rem; /* Espaço antes da lista */
+    margin-bottom: 1rem;
 }
 
 .event-list-header h3 {
     font-size: 0.9rem;
     text-transform: uppercase;
     color: #95a5a6;
-    margin: 0; /* Remove margem padrão do h3 */
+    margin: 0;
 }
 
-/* O novo botão "+ Adicionar Evento" */
-.open-modal-btn {
-    background-color: #4a657c; /* Mesmo cinza dos botões prev/next */
-    color: #ecf0f1;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.open-modal-btn:hover {
-    background-color: #5e7a91;
-}
-
-/* Estilo do botão quando está desabilitado */
-.open-modal-btn:disabled {
-    background-color: #3e5163; /* Mais escuro/esbatido */
-    color: #7f8c8d;
-    cursor: not-allowed;
-}
-
-
-/* (O resto dos teus estilos .no-events-message, .event-item, etc. continua igual) */
 .no-events-message {
     color: #95a5a6;
     text-align: center;
     padding-top: 2rem;
 }
 
-
-/* --- A MÁGICA (Media Query para Desktop) ---
-  Quando o ecrã tiver 768px de largura ou mais...
-*/
 @media (min-width: 768px) {
-
-    /* 1. O wrapper vira duas colunas (lado a lado) */
     .content-wrapper {
         flex-direction: row;
     }
 
-    /* 2. O calendário ocupa 65% do espaço */
     main {
         flex-basis: 65%;
-        padding-right: 1.5rem; /* Espaço entre as colunas */
+        padding-right: 1.5rem;
     }
 
-    /* 3. A lista de eventos ocupa 35% */
     .event-list-container {
         flex-basis: 35%;
-        margin-top: 0; /* Remove a margem do mobile */
+        margin-top: 0;
         padding-top: 0;
-        border-top: none; /* Remove a linha do mobile */
-
-        /* Adiciona scroll SÓ à lista de eventos se ela for muito longa */
-        max-height: 500px; /* Ajusta conforme necessário */
+        border-top: none;
+        max-height: 500px;
         overflow-y: auto;
     }
 
@@ -140,28 +85,24 @@ main {
     }
 }
 
-
-/* =========================================================
---- ESTILOS DO FULLCALENDAR E DA LISTA DE EVENTOS ---
-(Tudo o que vem a seguir é EXATAMENTE o que já tínhamos
- e não precisa de ser mudado!)
-=========================================================
-*/
-
-/* --- ESTILOS DO FULLCALENDAR (DARK MODE) --- */
 main .fc {
     --fc-border-color: transparent;
 }
 
+main .fc .fc-col-header {
+    border-bottom: none;
+}
+
 main .fc .fc-col-header-cell {
-    background-color: transparent;
+    background-color: #34495e;
     border: none;
 }
 
 main .fc .fc-toolbar-title {
     color: #ffffff;
-    font-size: 1.8rem;
+    font-size: 1rem;
     font-weight: 600;
+    text-transform: uppercase;
 }
 
 main .fc .fc-button {
@@ -177,7 +118,7 @@ main .fc .fc-button:hover {
 }
 
 main .fc .fc-col-header-cell-cushion {
-    color: #95a5a6;
+    color: #ffffff;
     font-weight: 500;
     text-decoration: none;
     font-size: 0.8rem;
@@ -201,7 +142,6 @@ main .fc .fc-day-other .fc-daygrid-day-number {
     color: #7f8c8d;
 }
 
-/* --- "HOJE" (Estilo Laranja) --- */
 main .fc .fc-day-today {
     background-color: transparent !important;
 }
@@ -220,18 +160,61 @@ main .fc .fc-day-today .fc-daygrid-day-number {
     float: none;
 }
 
-/* --- "PONTO DE MARCAÇÃO" (Evento) --- */
-main .fc .fc-daygrid-dot {
-    background-color: #95a5a6;
-    border: none;
-    width: 6px;
-    height: 6px;
+main .fc .fc-day-selected .fc-daygrid-day-number {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    margin-top: 2px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
+main .fc .fc-daygrid-day-events {
+    margin-top: 0;
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
 
-/* --- SECÇÃO: LISTA DE EVENTOS (Estilos) --- */
+main .fc .fc-daygrid-event-harness {
+    margin: 0 !important;
+}
+
+main .fc .fc-daygrid-event {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+main .fc .fc-daygrid-dot-event {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+main .fc .fc-daygrid-dot {
+    background-color: #0097e6;
+    border: none;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50%;
+    margin: 0;
+}
+
+main .fc .fc-event-time {
+    display: none;
+}
+
+main .fc .fc-event-title {
+    display: none;
+}
+
 .event-list-container h3 {
     font-size: 0.9rem;
     text-transform: uppercase;
@@ -254,9 +237,35 @@ main .fc .fc-daygrid-dot {
     border-radius: 10px;
     margin-bottom: 0.5rem;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .event-item .event-title {
     font-weight: 600;
     font-size: 1rem;
+    flex: 1;
+}
+
+.event-item .event-datetime {
+    text-align: right;
+    font-size: 0.75rem;
+    opacity: 0.9;
+    line-height: 1.3;
+}
+
+.event-item .event-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.event-item .event-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
 }
