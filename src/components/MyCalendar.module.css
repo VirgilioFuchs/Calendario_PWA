@@ -1,0 +1,132 @@
+.calendarContainer {
+
+}
+
+.calendarContainer :global(.fc) {
+    --fc-border-color: none !important;
+}
+
+.calendarContainer :global(.fc-col-header) {
+    border-bottom: none;
+}
+
+.calendarContainer :global(.fc-col-header-cell) {
+    background-color: #34495e;
+    border: none !important;
+}
+
+.calendarContainer :global(.fc-toolbar-title) {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.calendarContainer :global(.fc-button) {
+    background: #4a657c;
+    border: none;
+    box-shadow: none;
+    opacity: 0.8;
+}
+
+.calendarContainer :global(.fc-button:hover) {
+    background: #5e7a91;
+    opacity: 1;
+}
+
+.calendarContainer :global(.fc-col-header-cell-cushion) {
+    color: #ffffff;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding-bottom: 10px;
+    border: none !important;
+}
+
+.calendarContainer :global(.fc-daygrid-day-top) {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ESTILOS DOS NÚMEROS */
+.calendarContainer :global(.fc-daygrid-day-number) {
+    color: #ecf0f1;
+    text-decoration: none;
+    float: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.calendarContainer :global(.fc-day-other .fc-daygrid-day-number) {
+    color: #7f8c8d;
+}
+
+.calendarContainer :global(.fc-day-today) {
+    background-color: transparent !important;
+}
+
+.calendarContainer :global(.fc-day-today .fc-daygrid-day-number) {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f39c12;
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.7);
+}
+
+.calendarContainer :global(.fc-highlight) {
+    background: transparent !important;
+}
+
+.calendarContainer.selection-active :global(.fc-day-today:not(.fc-day-selected) .fc-daygrid-day-number) {
+    background-color: transparent;
+    color: #f39c12; /* Seu amarelo original */
+    box-shadow: none;
+}
+
+/* Garante que "Hoje" selecionado use a cor de seleção */
+.calendarContainer :global(.fc-day-today.fc-day-selected .fc-daygrid-day-number) {
+    background-color: #5e7a91; /* Sua cor de seleção */
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+}
+
+
+.calendarContainer :global(.fc-daygrid-day-events) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: right;
+    width: 28px;
+    margin-top: 4px;
+}
+
+.calendarContainer :global(.fc-daygrid-day-frame) {
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 0.5rem;
+}
+
+.calendarContainer :global(.fc-daygrid-event) {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.calendarContainer :global(.fc-event-time),
+.calendarContainer :global(.fc-event-title) {
+    display: none;
+}

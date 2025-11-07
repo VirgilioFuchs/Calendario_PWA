@@ -1,0 +1,67 @@
+body {
+    font-family: sans-serif;
+    background-color: #2c3e50;
+}
+
+.App {
+    max-width: 1000px;
+    width: 100%;
+    height: auto;
+    min-height: 500px;
+    margin: 2rem auto;
+    background-color: #34495e;
+    color: #ecf0f1;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    flex-shrink: 0;
+    padding: 1.5rem 1rem;
+    background-color: #34495e;
+    border-bottom: 1px solid #4a657c;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: left;
+    color: #ffffff;
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.content-wrapper {
+    display: flex;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    flex-direction: column;
+}
+
+main {
+    flex-shrink: 0;
+    background-color: #34495e;
+}
+
+.event-list-container {
+    /* estilos da lista de eventos */
+}
+.event-list-header {
+    /* estilos do header da lista */
+}
+
+
+@media (min-width: 768px) {
+    .content-wrapper {
+        flex-direction: row;
+    }
+    main {
+        flex-basis: 65%;
+        padding-right: 1.5rem;
+    }
+    .event-list-container {
+        flex-basis: 35%;
+    }
+}
