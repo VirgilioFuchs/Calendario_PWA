@@ -26,17 +26,37 @@ const MyCalendar: React.FC = () => {
     const calendarWrapperRef = useRef<HTMLDivElement>(null);
 
     const handleDateClick = (info: DateClickArg) => {
+
+        const dayCell = info.dayEl.closest('.fc-day') || info.dayEl;
+
+        const clickedDate = info.date;
+        const currentMonth = info.view.currentStart.getMonth();
+        const clickedMonth = clickedDate.getMonth();
+
+        if (clickedMonth !== currentMonth) {
+            return;
+        }
+
+        if (selectedDate === info.dateStr) {
+            dayCell.classList.remove('fc-day-selected');
+            setSelectedDayEvents([]);
+            setSelectedDate(null);
+            document.documentElement.classList.remove('calendar-selection-active');
+            return;
+        }
+
         document.querySelectorAll('.fc-day').forEach(day => {
             day.classList.remove('fc-day-selected');
         });
 
-        info.dayEl.classList.add('fc-day-selected');
+        dayCell.classList.add('fc-day-selected');
 
         const eventsOnThisDay = events.filter(event => {
             return event.start.split('T')[0] === info.dateStr;
         });
         setSelectedDayEvents((eventsOnThisDay))
-        calendarWrapperRef.current?.classList.add('selection-active');
+        setSelectedDate(info.dateStr)
+        document.documentElement.classList.add('calendar-selection-active');
     };
 
     useEffect(() => {
@@ -45,7 +65,7 @@ const MyCalendar: React.FC = () => {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            const calendarElement = calendarWrapperRef.current;
+            const calendarElement = document.querySelector('.App');
             if (calendarElement && !calendarElement.contains(event.target as Node)) {
                 document.querySelectorAll('.fc-day').forEach(day => {
                     day.classList.remove('fc-day-selected');
@@ -53,6 +73,7 @@ const MyCalendar: React.FC = () => {
                 });
                 setSelectedDate(null);
                 setSelectedDayEvents(events);
+                document.documentElement.classList.remove('calendar-selection-active');
             }
         };
 
@@ -108,7 +129,7 @@ const MyCalendar: React.FC = () => {
     };
 
     return (
-        <div className="my-calendar-wrapper" ref={calendarWrapperRef}>
+        <div>
             <header>
                 <h1>Calendário Anglo</h1>
             </header>
@@ -135,10 +156,6 @@ const MyCalendar: React.FC = () => {
                 </main>
 
                 <section className="event-list-container">
-                    <div className="event-list-header">
-                        <h3>Eventos do dia</h3>
-                    </div>
-
                     <div className="event-list">
                         {selectedDayEvents.length > 0 ? (
                             selectedDayEvents.map((event, index) => (

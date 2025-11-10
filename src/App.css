@@ -45,13 +45,12 @@ main {
     background-color: #34495e;
 }
 
-.event-list-container {
-    /* estilos da lista de eventos */
+.no-events-message {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #bdc3c7;
+    margin-top: 2rem;
 }
-.event-list-header {
-    /* estilos do header da lista */
-}
-
 
 @media (min-width: 768px) {
     .content-wrapper {

@@ -38,14 +38,20 @@
     color: #ffffff;
     font-weight: 500;
     text-decoration: none;
-    font-size: 0.8rem;
     padding-bottom: 10px;
     border: none !important;
+    text-transform: uppercase;
+}
+
+.calendarContainer :global(.fc-col-header-cell-cushion)::first-letter {
+    font-size: 0.8rem;
+}
+
+.calendarContainer :global(.fc-col-header-cell-cushion) {
+    font-size: 0;
 }
 
 .calendarContainer :global(.fc-daygrid-day-top) {
-    position: relative;
-    z-index: 2;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -67,8 +73,9 @@
     transition: all 0.2s ease-in-out;
 }
 
-.calendarContainer :global(.fc-day-other .fc-daygrid-day-number) {
-    color: #7f8c8d;
+.calendarContainer :global(.fc-day-other) {
+    visibility: hidden;
+    pointer-events: none !important;
 }
 
 .calendarContainer :global(.fc-day-today) {
@@ -84,23 +91,24 @@
     box-shadow: 0 0 15px rgba(243, 156, 18, 0.7);
 }
 
+/* Bolinha azul para dias selecionados (exceto o dia de hoje) */
+.calendarContainer :global(.fc-day-selected:not(.fc-day-today) .fc-daygrid-day-number) {
+    background-color: #5e7a91 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(94, 122, 145, 0.5) !important;
+}
+
+/* Remove a bolinha do dia de hoje quando QUALQUER dia está selecionado */
+:global(.calendar-selection-active) .calendarContainer :global(.fc-day-today:not(.fc-day-selected) .fc-daygrid-day-number) {
+    background-color: transparent !important;
+    color: #f39c12 !important;
+    box-shadow: none !important;
+    font-weight: bold !important;
+}
+
 .calendarContainer :global(.fc-highlight) {
     background: transparent !important;
 }
-
-.calendarContainer.selection-active :global(.fc-day-today:not(.fc-day-selected) .fc-daygrid-day-number) {
-    background-color: transparent;
-    color: #f39c12; /* Seu amarelo original */
-    box-shadow: none;
-}
-
-/* Garante que "Hoje" selecionado use a cor de seleção */
-.calendarContainer :global(.fc-day-today.fc-day-selected .fc-daygrid-day-number) {
-    background-color: #5e7a91; /* Sua cor de seleção */
-    color: #ffffff;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
-}
-
 
 .calendarContainer :global(.fc-daygrid-day-events) {
     display: flex;
@@ -129,4 +137,19 @@
 .calendarContainer :global(.fc-event-time),
 .calendarContainer :global(.fc-event-title) {
     display: none;
+}
+
+.calendarContainer :global(.fc-day-sat.fc-day-today),
+.calendarContainer :global(.fc-day-sun.fc-day-today) {
+    background-color: #52616f !important;
+}
+
+.calendarContainer :global(.fc-day-sat .fc-daygrid-day-number),
+.calendarContainer :global(.fc-day-sun .fc-daygrid-day-number) {
+    color: #52616f !important;
+}
+
+.calendarContainer :global(.fc-day-sat .fc-col-header-cell-cushion),
+.calendarContainer :global(.fc-day-sun .fc-col-header-cell-cushion) {
+    color: #52616f !important;
 }
