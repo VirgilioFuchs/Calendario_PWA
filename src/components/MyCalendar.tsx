@@ -1,156 +1,226 @@
-import React, {useEffect, useState, useRef } from "react";
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin, {type DateClickArg} from "@fullcalendar/interaction";
-import ptbrLocale from '@fullcalendar/core/locales/pt-br';
+import React, {useRef, useState, useCallback, useEffect} from "react";
+import Calendar from '@toast-ui/react-calendar';
+import {TuiDate, TuiDateMatrix } from '@toast-ui/calendar';
+import '@toast-ui/calendar/dist/toastui-calendar.min.css';
 import {EventImageText} from "./EventImageText.tsx";
-import styles from './MyCalendar.module.css';
+import styles from './MyCalendar.module.css'
+import {useSwipeable} from "react-swipeable";
 
-interface MyEvent {
+interface MySchedule {
+    id: string;
+    calendarId: string;
     title: string;
-    start: string;
+    category: 'time' | 'allday';
+    start: TuiDate;
+    end?: TuiDate | null;
+    isFavorite?: boolean;
+    originalStart: string;
     allDay: boolean;
 }
 
 const MyCalendar: React.FC = () => {
-    const [events] = useState<MyEvent[]>([
-        {title: 'Ir trabalhar!', start: '2025-11-04T09:00:00', allDay: false},
-        {title: 'Ir trabalhar!', start: '2025-11-05T10:00:00', allDay: false},
-        {title: 'Ir trabalhar!', start: '2025-11-06T09:30:00', allDay: false},
-        {title: 'Encontrar Amigos!', start: '2025-11-07T14:45:00', allDay: false},
-        {title: 'Encontrar Amigos!', start: '2025-11-07', allDay: true},
+    const calendarRef = useRef<Calendar>(null);
+
+    const [schedules] = useState<MySchedule[]>([
+        {
+            id: '1',
+            calendarId: '1',
+            title: 'Ir trabalhar!',
+            start: '2025-11-04T09:00:00',
+            end: '2025-11-04T10:00:00',
+            category: 'time',
+            originalStart: '2025-11-04T09:00:00',
+            allDay: false
+        },
+        {
+            id: '2',
+            calendarId: '1',
+            title: 'Ir trabalhar!',
+            start: '2025-11-05T10:00:00',
+            end: '2025-11-05T11:00:00',
+            category: 'time',
+            originalStart: '2025-11-05T10:00:00',
+            allDay: false
+        },
+        {
+            id: '3',
+            calendarId: '1',
+            title: 'Ir trabalhar!',
+            start: '2025-11-06T09:30:00',
+            end: '2025-11-06T10:30:00',
+            category: 'time',
+            originalStart: '2025-11-06T09:30:00',
+            allDay: false
+        },
+        {
+            id: '4',
+            calendarId: '1',
+            title: 'Encontrar Amigos!',
+            start: '2025-11-07T14:45:00',
+            end: '2025-11-07T15:45:00',
+            category: 'time',
+            originalStart: '2025-11-07T14:45:00',
+            allDay: false
+        },
+        {
+            id: '5',
+            calendarId: '1',
+            title: 'Encontrar Amigos!',
+            start: '2025-11-07',
+            end: '2025-11-07',
+            category: 'allday',
+            originalStart: '2025-11-07',
+            allDay: true
+        },
     ]);
-    const [selectedDayEvents, setSelectedDayEvents] = useState<MyEvent[]>([]);
+
+    const [selectedDayEvents, setSelectedDateEvents] = useState<MySchedule[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [currentDate, setCurrentDate] = useState(new Date()); // titulo - header toolbar (mes/ano)
 
-    const calendarWrapperRef = useRef<HTMLDivElement>(null);
+    const handlePrev = useCallback(() => {
+        calendarRef.current?.getInstance().prev();
+        const newDate = calendarRef.current?.getInstance().getDate().toDate();
+        if (newDate) setCurrentDate(newDate);
+    }, []);
 
-    const handleDateClick = (info: DateClickArg) => {
+    const handleNext = useCallback(() => {
+        calendarRef.current?.getInstance().next();
+        const newDate = calendarRef.current?.getInstance().getDate().toDate();
+        if (newDate) setCurrentDate(newDate);
+    }, []);
 
-        const dayCell = info.dayEl.closest('.fc-day') || info.dayEl;
+    // Arrastar para trocar de mês
+    const swipeHandlers = useSwipeable({
+        onSwipedLeft: () => handleNext(), // chama o mês posterior
+        onSwipedRight: () => handlePrev(), // chama o mês anterior
+        trackMouse: true,
+        // Impede da página rolar junto
+        preventScrollOnSwipe: true
+    });
 
-        const clickedDate = info.date;
-        const currentMonth = info.view.currentStart.getMonth();
-        const clickedMonth = clickedDate.getMonth();
+    const handleSelectDateTime = (event: { start: Date, end: Date }) => {
+        const clickedDateStr = event.start.toISOString().split('T')[0];
 
-        if (clickedMonth !== currentMonth) {
-            return;
-        }
-
-        if (selectedDate === info.dateStr) {
-            dayCell.classList.remove('fc-day-selected');
-            setSelectedDayEvents([]);
+        // Lógia de Desselecionar o dia
+        if (selectedDate === clickedDateStr) {
+            setSelectedDateEvents(schedules);
             setSelectedDate(null);
             document.documentElement.classList.remove('calendar-selection-active');
+            calendarRef.current?.getInstance().clearGridSelections();
             return;
         }
 
-        document.querySelectorAll('.fc-day').forEach(day => {
-            day.classList.remove('fc-day-selected');
-        });
+        // Seleciona o dia
+        calendarRef.current?.getInstance().clearGridSelections();
+        calendarRef.current?.getInstance().select(event.start, event.end);
 
-        dayCell.classList.add('fc-day-selected');
-
-        const eventsOnThisDay = events.filter(event => {
-            return event.start.split('T')[0] === info.dateStr;
+        // Atualiza a lista Eventos do dia
+        const eventsOnThisDay = schedules.filter(schedule => {
+            return schedule.start.toString().split('T')[0] === clickedDateStr;
         });
-        setSelectedDayEvents((eventsOnThisDay))
-        setSelectedDate(info.dateStr)
+        setSelectedDateEvents(eventsOnThisDay);
+        setSelectedDate(clickedDateStr);
         document.documentElement.classList.add('calendar-selection-active');
     };
-
+    // atualiza a lista Eventos do mês
     useEffect(() => {
-        setSelectedDayEvents(events);
-    }, [events]);
+        setSelectedDateEvents(schedules);
+    }, [schedules]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            const calendarElement = document.querySelector('.App');
+            const calendarElement = document.querySelector(('.App'));
             if (calendarElement && !calendarElement.contains(event.target as Node)) {
-                document.querySelectorAll('.fc-day').forEach(day => {
-                    day.classList.remove('fc-day-selected');
-                    calendarWrapperRef.current?.classList.remove('selection-active');
-                });
+                calendarRef.current?.getInstance().clearGridSelections();
                 setSelectedDate(null);
-                setSelectedDayEvents(events);
+                setSelectedDateEvents(schedules);
                 document.documentElement.classList.remove('calendar-selection-active');
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
+            document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [events]);
+    }, [schedules]);
 
-    const formatEventTime = (event: MyEvent) => {
-        const startDate = new Date(event.start)
-
+    const formatEventTime = (event: MySchedule) => {
+        const startDate = new Date(event.originalStart);
         if (event.allDay) {
             return 'Dia Inteiro';
         }
 
-        const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-        const startTime = startDate.toLocaleTimeString('pt-BR', timeOptions);
-
-        return startTime;
+        const timeOptions: Intl.DateTimeFormatOptions = {hour: "2-digit", minute: "2-digit"};
+        return startDate.toLocaleTimeString('pt-BR', timeOptions);
     };
 
-    const formatEventDate = (event: MyEvent) => {
-        const startDate = new Date(event.start);
-        const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const formatEventDate = (event: MySchedule) => {
+        const startDate = new Date(event.originalStart);
+        const dateOptions: Intl.DateTimeFormatOptions = {day: "2-digit", month: "2-digit", year: "numeric"};
         return startDate.toLocaleDateString('pt-BR', dateOptions);
     };
 
-    const renderEventContent = () => {
-        return (
-            <div
-                style={{
-                    width: '12px',
-                    height: '12px',
-                    backgroundColor: '#0097e6',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <img
-                    src="/star-icon.png"
-                    alt="evento"
-                    style={{
-                        width: '12px',
-                        height: '12px',
-                        display: 'block'
-                    }}
-                />
-            </div>
-        );
-    };
+    const templates = {
+        monthDaycell(day: TuiDateMatrix) {
+            const dateStr = day.date.toISOString().split('T')[0];
+            const hasEvent = schedules.some(
+                (s) => s.start.toString().split('T')[0] === dateStr
+            );
 
+            return (
+                <div className={styles.customDayCell}>
+                    <span className={styles.customDayNumber}>{day.date.getDate()}</span>
+                    <div className={styles.customMarkersContainer}>
+                        {hasEvent && (
+                            <img
+                                src="/star-icon.png"
+                                alt="evento"
+                                style={{width: '12px', height: '12px'}}
+                            />
+                        )}
+                    </div>
+                </div>
+            );
+        },
+        monthMoreClose() {
+            return '';
+        },
+        monthGridHeaderExceed() {
+            return '';
+        },
+    };
     return (
-        <div>
+        <>
             <header>
                 <h1>Calendário Anglo</h1>
+                <div className={styles.calendarControls}>
+                    <span className={styles.calendarTitle}>
+                        {currentDate.toLocaleDateString('pt-BR', {
+                            month: 'long',
+                            year: 'numeric',
+                        })}
+                    </span>
+                </div>
             </header>
 
             <div className="content-wrapper">
-                <main className={styles.calendarContainer}>
-                    <FullCalendar
-                        plugins={[dayGridPlugin, interactionPlugin]}
-                        locale={ptbrLocale}
-                        initialView="dayGridMonth"
-                        height="auto"
-                        eventDisplay="list-item"
-                        weekends={true}
-                        events={events}
-                        selectable={true}
-                        dateClick={handleDateClick}
-                        eventContent={renderEventContent}
-                        headerToolbar={{
-                            left: 'prev',
-                            center: 'title',
-                            right: 'next'
+                <main className={styles.calendarContainer} {...swipeHandlers}>
+                    <Calendar
+                        ref={calendarRef}
+                        view="month"
+                        schedules={schedules}
+                        useDetailPopup={false}
+                        useFormPopup={false}
+
+                        // Conecta as funções
+                        templates={templates}
+                        onSelectDateTime={handleSelectDateTime}
+
+                        month={{
+                            dayNames: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'],
+                            startDayOfWeek: 0,
+                            isAlways6Weeks: false,
                         }}
                     />
                 </main>
@@ -160,7 +230,7 @@ const MyCalendar: React.FC = () => {
                         {selectedDayEvents.length > 0 ? (
                             selectedDayEvents.map((event, index) => (
                                 <EventImageText
-                                    key={event.start + index}
+                                    key={event.id + index}
                                     imageUrl={"/star-icon.png"}
                                     altText="favoritos"
                                     text={event.title}
@@ -176,8 +246,8 @@ const MyCalendar: React.FC = () => {
                     </div>
                 </section>
             </div>
-        </div>
+        </>
     );
-};
+}
 
 export default MyCalendar;
