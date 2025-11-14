@@ -1,125 +1,65 @@
-/* Controles do Header */
-.calendarControls {
-    display: flex;
-    justify-content: center; /* Centraliza o título */
-    align-items: center;
-    padding: 0 1.5rem 1rem 1.5rem;
-    color: #ecf0f1;
-}
-
-.calendarTitle {
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-/* Cabeçalho dos Dias da Semana */
-.calendarContainer :global(.toastui-calendar-month .toastui-calendar-day-name) {
-    background-color: #34495e;
-    border: none !important;
-    color: #ffffff;
-    font-weight: 500;
-    text-decoration: none;
-    padding-bottom: 10px;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    height: auto !important;
-    line-height: inherit !important;
-}
-
-/* Célula Customizada */
-.customDayCell {
-    position: relative;
-    min-height: 60px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 0.5rem;
-    height: 100%;
-}
-
-/* Número do Dia */
-.customDayNumber {
-    color: #ecf0f1;
-    text-decoration: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    margin: 0;
-    transition: all 0.2s ease-in-out;
-}
-
-/* Marcadores de Evento */
-.customMarkersContainer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    justify-content: center;
-    width: 28px;
-    margin-top: 4px;
-}
-
-/* Ocultar Eventos */
-.calendarContainer :global(.toastui-calendar-weekday-schedule) {
+.hidden {
     display: none !important;
 }
 
-/* Esconder dias de outro Mês  */
-.calendarContainer :global(.toastui-calendar-daygrid-cell-other) {
-    visibility: hidden;
-    pointer-events: none !important;
+/* Deixa a primeira letra do mês em maiúscula */
+.calendarContainer :global(.rdp-root *) {
+    text-transform: capitalize;
 }
 
-/* Fundo da Célula */
-.calendarContainer :global(.toastui-calendar-month-daygrid-cell) {
-    background-color: #34495e;
+/* Dias da semana (domingo á sábado) */
+.calendarContainer :global(.rdp-weekday) {
+    color: #fff; /* Sua cor normal */
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding: 0.5rem;
 }
 
-/* Dia de Hoje */
-.calendarContainer :global(.toastui-calendar-daygrid-cell-today .customDayNumber) {
+/* Cor dos dias do final de semana*/
+.calendarContainer :global(.rdp-weekday:first-child),
+.calendarContainer :global(.rdp-weekday:last-child) {
+    color: #95a5a6;
+}
+
+/* Define as propriedades do dia hoje e dia selecionado (o tamanho das bolinhas) */
+.calendarContainer :global(.rdp-day_button) {
+    width: 38px;
+    height: 38px;
+    margin-left: 4px;
+    margin-right: 4px;
+    justify-items: center;
+    align-items: center;
+}
+
+/* Define a cor da bolinha de Hoje*/
+.calendarContainer :global(.rdp-today:not(.rdp-selected) .rdp-day_button) {
     background-color: #f39c12;
-    color: #ffffff;
-    box-shadow: 0 0 15px rgba(243, 156, 18, 0.7);
+    border-radius: 100%;
+    color: white;
 }
 
-/* Dia Selecionado */
-.calendarContainer :global(.toastui-calendar-daygrid-cell-selected) {
-    background-color: #34495e !important;
-}
-.calendarContainer :global(.toastui-calendar-daygrid-cell-selected:not(.toastui-calendar-daygrid-cell-today) .customDayNumber) {
-    background-color: #5e7a91 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 15px rgba(94, 122, 145, 0.5) !important;
-}
-
-/* Lógica de Seleção do "Hoje" */
-:global(html.calendar-selection-active) .calendarContainer :global(.toastui-calendar-daygrid-cell-today:not(.toastui-calendar-daygrid-cell-selected) .customDayNumber) {
-    background-color: transparent !important;
-    color: #f39c12 !important;
-    box-shadow: none !important;
-    font-weight: bold !important;
-}
-
-/* Estilos de Fim de Semana */
-.calendarContainer :global(.toastui-calendar-day-name-sat),
-.calendarContainer :global(.toastui-calendar-day-name-sun) {
-    color: #52616f !important;
-}
-
-.calendarContainer :global(.toastui-calendar-daygrid-cell-sat .customDayNumber),
-.calendarContainer :global(.toastui-calendar-daygrid-cell-sun .customDayNumber) {
-    color: #52616f !important;
-}
-
-/* REMOÇÃO DE BORDAS */
-.calendarContainer :global(.toastui-calendar-panel),
-.calendarContainer :global(.toastui-calendar-grid),
-.calendarContainer :global(.toastui-calendar-month-daygrid-cell) {
+/* Define a cor da bolinha de seleção do dia */
+.calendarContainer :global(.rdp-selected .rdp-day_button) {
+    background-color: white;
+    color: black;
     border: none !important;
+}
+/* Para não trocar a cor quando seleciona o dia de hoje */
+.calendarContainer :global(.rdp-today.rdp-selected .rdp-day_button) {
+    background-color: #f39c12;
+    color: white;
+}
+
+/* Funcionalidade para desfazer a bolinha do dia de hoje */
+:global(html.calendar-selection-active) .calendarContainer :global(.rdp-today:not(.rdp-selected) .rdp-day_button) {
+    background-color: transparent !important;
+    color: #f39c12;
+    border-color: transparent !important;
+    box-shadow: none;
+}
+
+/* Dias do fim de semana em cinza */
+.calendarContainer :global(.rdp-day_weekend:not(.rdp-today):not(.rdp-selected) .rdp-day_button) {
+    color: #95a5a6 !important;
 }
