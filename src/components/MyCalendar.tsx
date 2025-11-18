@@ -6,9 +6,6 @@ import styles from './MyCalendar.module.css';
 import {format} from 'date-fns';
 import { useSwipeable } from "react-swipeable";
 
-// ==========================================================
-// ESTRUTURA COM LÓGICA DE SELEÇÃO DO DIA DE HOJE E SWIPE
-// ==========================================================
 const MyCalendar: React.FC = () => {
 
     const modifiers = {
@@ -68,34 +65,42 @@ const MyCalendar: React.FC = () => {
         return format(date, 'ccccc', {locale: ptBR}).toUpperCase();
     };
 
+    const year = currentMonth.getFullYear();
+    const monthName = currentMonth.toLocaleDateString('pt-br', {month: 'long'});
+
     return (
         <>
             <div className="content-wrapper">
                 <main className={styles.calendarContainer} {...swipeHandlers}>
-                    <DayPicker
-                        locale={ptBR} // Tradução
-                        mode="single" // Modo de seleção
+                    <header className={styles.calendarHeader}>
+                        <span className={styles.calendarYear}>{year}</span>
+                        <span className={styles.calendarMonth}>
+                            {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                        </span>
 
-                        // Conecta o estado ao calendário
-                        selected={selectedDate}
-                        onSelect={handleDaySelect}
+                        <DayPicker
+                            locale={ptBR} // Tradução
+                            mode="single" // Modo de seleção
 
-                        // Usa os botões de navegação padrão
-                        captionLayout="label"
-                        formatters={{formatWeekdayName}}
-                        modifiers={modifiers}
-                        //Final de semana com classe personalizada
-                        modifiersClassNames={{
-                            weekend: 'rdp-day_weekend'
-                        }}
-                        // Estado do Mês
-                        month={currentMonth}
-                        onMonthChange={setCurrentMonth}
+                            // Conecta o estado ao calendário
+                            selected={selectedDate}
+                            onSelect={handleDaySelect}
 
-                        classNames={{
-                            nav: styles.hidden
-                        }}
-                    />
+                            formatters={{formatWeekdayName}}
+                            modifiers={modifiers}
+                            //Final de semana com classe personalizada
+                            modifiersClassNames={{
+                                weekend: 'rdp-day_weekend'
+                            }}
+                            // Estado do Mês
+                            month={currentMonth}
+                            onMonthChange={setCurrentMonth}
+
+                            classNames={{
+                                nav: styles.hidden
+                            }}
+                        />
+                    </header>
                 </main>
             </div>
         </>
