@@ -19,7 +19,6 @@ const MyCalendar: React.FC = () => {
     };
 
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
     const handleDaySelect = (day: Date | undefined) => {
@@ -82,7 +81,7 @@ const MyCalendar: React.FC = () => {
                         onSelect={handleDaySelect}
 
                         // Usa os botões de navegação padrão
-                        captionLayout="dropdown"
+                        captionLayout="label"
                         formatters={{formatWeekdayName}}
                         modifiers={modifiers}
                         //Final de semana com classe personalizada
