@@ -16,9 +16,9 @@ export default defineConfig({
             },
 
             manifest: {
-                name: 'React PWA (Vite)',
-                short_name: 'ReactPWA',
-                description: 'Um PWA feito com React, TypeScript e Vite',
+                name: 'Calendario Anglo PWA 2025',
+                short_name: 'CalendarioAnglo',
+                description: 'Gerenciador de eventos academicos e pessoais',
                 theme_color: '#3498db',
                 background_color: '#ffffff',
                 display: 'standalone',
