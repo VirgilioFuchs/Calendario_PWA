@@ -1,69 +1,89 @@
 import React, { useState } from 'react';
-import { MONTH_NAMES } from './types';
-import type { ViewMode } from './types';
 
-// Componentes
 import Header from './components/Header';
 import DayView from './components/DayView';
 import MonthView from './components/MonthView';
 import FooterStrip from './components/FooterStrip';
+import MonthDetail from './components/MonthDetail';
 
 import './App.css';
 
-const App: React.FC = () => {
-    const [view, setView] = useState<ViewMode>('day');
+type NavLevel = 'year_list' | 'month_detail' | 'day_detail';
 
-    // Estado Global
+const App: React.FC = () => {
+    const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
+
     const [year] = useState(2025);
-    const [monthIdx] = useState(9); // Outubro
+    const [selectedMonthIdx, setSelectedMonthIdx] = useState(9); // Default Outubro
     const [selectedDay, setSelectedDay] = useState(13);
 
-    const [visibleMonthLabel, setVisibleMonthLabel] = useState(`${MONTH_NAMES[monthIdx]} ${year}`);
+    // --- HANDLERS DE NAVEGAÇÃO ---
+    const handleMonthSelect = (monthIdx: number) => {
+        setSelectedMonthIdx(monthIdx);
+        setNavLevel('month_detail');
+    };
+
+    const handleDaySelect = (day: number) => {
+        setSelectedDay(day);
+        setNavLevel('day_detail');
+    };
+
+    const handleBackToMonth = () => setNavLevel('month_detail');
+    const handleBackToYear = () => setNavLevel('year_list');
+
+    // Lógica de Exibição
+    const showFooter = navLevel === 'day_detail';
 
     return (
         <div className="flex flex-col h-screen bg-white text-black font-sans overflow-hidden">
-
-            {/* Styles locais para esconder scrollbar */}
             <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-            <Header view={view} setView={setView} />
+            {/* HEADER PRINCIPAL:
+         Agora passamos o currentYear.
+         Lógica: Aparece APENAS na lista de anos ('year_list').
+      */}
+            {navLevel === 'year_list' && <Header currentYear={year} />}
 
             <main className="flex-1 relative flex flex-col overflow-hidden">
-                {/* VIEW: DIA */}
-                {view === 'day' && (
-                    <DayView
+
+                {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
+                {navLevel === 'year_list' && (
+                    <MonthView
                         currentYear={year}
-                        currentMonthIdx={monthIdx}
-                        selectedDay={selectedDay}
+                        initialMonthIdx={selectedMonthIdx}
+                        onMonthClick={handleMonthSelect}
                     />
                 )}
 
-                {/* VIEW: MÊS */}
-                {view === 'month' && (
-                    <>
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm px-5 py-2 rounded-full shadow-lg border border-gray-100 z-50 pointer-events-none transition-all duration-300">
-              <span className="text-sm font-extrabold uppercase tracking-wider">
-                {visibleMonthLabel}
-              </span>
-                        </div>
-
-                        <MonthView
-                            currentYear={year}
-                            initialMonthIdx={monthIdx}
-                            onMonthVisible={setVisibleMonthLabel}
-                        />
-                    </>
+                {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
+                {navLevel === 'month_detail' && (
+                    <MonthDetail
+                        year={year}
+                        monthIdx={selectedMonthIdx}
+                        onBack={handleBackToYear}
+                        onDayClick={handleDaySelect}
+                    />
                 )}
+
+                {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
+                {navLevel === 'day_detail' && (
+                    <DayView
+                        currentYear={year}
+                        currentMonthIdx={selectedMonthIdx}
+                        selectedDay={selectedDay}
+                        onBack={handleBackToMonth}
+                    />
+                )}
+
             </main>
 
-            {/* FOOTER - Só aparece no DIA */}
-            {view === 'day' && (
+            {showFooter && (
                 <FooterStrip
                     currentYear={year}
-                    currentMonthIdx={monthIdx}
+                    currentMonthIdx={selectedMonthIdx}
                     selectedDay={selectedDay}
                     onSelectDay={setSelectedDay}
                 />

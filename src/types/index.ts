@@ -16,6 +16,8 @@ export const MONTH_NAMES = [
 
 export const WEEK_DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+export const WEEK_DAYS_ABREVIATED = ["D", "S", "T", "Q", "Q", "S", "S"];
+
 // Gera os dias do mês
 export const getDaysInMonth = (year: number, monthIndex: number) => {
     return new Date(year, monthIndex + 1, 0).getDate();

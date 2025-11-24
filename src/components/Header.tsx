@@ -1,39 +1,27 @@
 import React from 'react';
-import type {ViewMode} from '../types';
 
 interface HeaderProps {
-    view: ViewMode;
-    setView: (v: ViewMode) => void;
+    currentYear: number;
 }
-// Design do Header
-const Header: React.FC<HeaderProps> = ({ view, setView }) => {
+
+const Header: React.FC<HeaderProps> = ({ currentYear }) => {
     return (
-        <header className="flex flex-col shrink-0 z-30 bg-white border-b border-gray-200">
-            <div className="h-14 flex items-center px-4">
-                <div className="bg-gray-100 rounded-lg p-2 flex-1 flex items-center gap-2">
-                    <span>🔍</span>
-                    <input
-                        type="text"
-                        className="bg-transparent border-none outline-none w-full text-base"
-                        placeholder="Buscar..."
-                    />
-                </div>
-            </div>
-            <div className="flex border-t border-gray-200">
-                <button
-                    onClick={() => setView('day')}
-                    className={`flex-1 p-3 text-center text-sm font-bold transition-all border-b-2 cursor-pointer
-            ${view === 'day' ? 'text-black border-black' : 'text-gray-500 border-transparent'}`}
-                >
-                    DIA
+        <header className="flex flex-col shrink-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 transition-all sticky top-0">
+            <div className="h-14 flex items-center justify-between px-4">
+
+                {/* Título do Ano (Estilo iOS) */}
+                <span className="text-3xl font-extrabold tracking-tight ">
+          {currentYear}
+        </span>
+
+                {/* Ícone de Busca (Discreto à direita) */}
+                <button className="p-2 hover:bg-red-50 rounded-full transition-colors">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
                 </button>
-                <button
-                    onClick={() => setView('month')}
-                    className={`flex-1 p-3 text-center text-sm font-bold transition-all border-b-2 cursor-pointer
-            ${view === 'month' ? 'text-black border-black' : 'text-gray-500 border-transparent'}`}
-                >
-                    MÊS
-                </button>
+
             </div>
         </header>
     );
