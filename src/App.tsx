@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 
 import Header from './components/Header';
 import DayView from './components/DayView';
-import MonthView from './components/MonthView';
+import YearView from './components/YearView.tsx';
 import FooterStrip from './components/FooterStrip';
-import MonthDetail from './components/MonthDetail';
+import MonthView from './components/MonthView.tsx';
 
 import './App.css';
 
@@ -23,7 +23,8 @@ const App: React.FC = () => {
         setNavLevel('month_detail');
     };
 
-    const handleDaySelect = (day: number) => {
+    const handleDaySelect = (monthIdx: number, day: number) => {
+        setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
         setNavLevel('day_detail');
     };
@@ -41,17 +42,13 @@ const App: React.FC = () => {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-            {/* HEADER PRINCIPAL:
-         Agora passamos o currentYear.
-         Lógica: Aparece APENAS na lista de anos ('year_list').
-      */}
             {navLevel === 'year_list' && <Header currentYear={year} />}
 
             <main className="flex-1 relative flex flex-col overflow-hidden">
 
                 {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
                 {navLevel === 'year_list' && (
-                    <MonthView
+                    <YearView
                         currentYear={year}
                         initialMonthIdx={selectedMonthIdx}
                         onMonthClick={handleMonthSelect}
@@ -60,7 +57,7 @@ const App: React.FC = () => {
 
                 {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
                 {navLevel === 'month_detail' && (
-                    <MonthDetail
+                    <MonthView
                         year={year}
                         monthIdx={selectedMonthIdx}
                         onBack={handleBackToYear}
