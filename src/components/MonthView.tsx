@@ -21,18 +21,24 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
+                    // isIntersecting: true quando o elemento entra na "zona ativa" definida pelo rootMargin
                     if (entry.isIntersecting) {
                         const idx = Number(entry.target.getAttribute('data-month-index'));
                         if (!isNaN(idx)) setVisibleMonthIdx(idx);
                     }
                 });
             },
-            { root: containerRef.current, threshold: 0.85 }
+            {
+                root: containerRef.current,
+                threshold: 0.7
+            }
         );
+
         const sections = containerRef.current?.querySelectorAll('.month-grid-section');
         sections?.forEach(s => observer.observe(s));
+
         return () => observer.disconnect();
-    }, [containerRef]);
+    }, []);
 
     // Scroll inicial para o mês selecionado
     useEffect(() => {
@@ -130,18 +136,18 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
                                         <div
                                             key={d}
                                             onClick={() => onDayClick(mIdx,d)}
-                                            className={`min-h-[80px] flex flex-col items-center justify-start pt-3 border-t border-gray-300 relative transition-colors cursor-pointer active:bg-gray-100
+                                            className={`min-h-[100px] flex flex-col items-center justify-start pt-3 border-t border-gray-300 relative transition-colors cursor-pointer active:bg-gray-100
                                             ${isWeekend ? 'bg-gray-50/50' : 'bg-white'}`}
                                         >
                                             {/* Nome do Mês no Dia 1 */}
                                             {isFirstDay && (
-                                                <span className="text-[10px] font-bold uppercase text-black absolute -top-4 left-1/2 -translate-x-1/2 bg-white px-2 z-10">
+                                                <span className="text-[10px] font-bold uppercase text-black absolute -top-5 left-1/2 -translate-x-1/2 bg-white px-2 z-10">
                                                     {MONTH_NAMES[mIdx]}
                                                 </span>
                                             )}
 
                                             {/* Número do Dia */}
-                                            <span className={`text-lg leading-none ${isFirstDay ? 'mt-3' : ''}
+                                            <span className={`text-lg leading-none
                                             ${isWeekend 
                                                 ? 'text-gray-400 font-normal' 
                                                 : 'text-gray-900 font-extrabold'}
@@ -164,7 +170,7 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
                 })}
 
                 {/* Espaço final */}
-                <div className="h-32" />
+                <div className="h-12"/>
             </div>
         </div>
     );

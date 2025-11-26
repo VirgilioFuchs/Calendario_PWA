@@ -3,9 +3,10 @@ export type ViewMode = 'day' | 'month';
 export interface CalendarEvent {
     id: string;
     title: string;
+    description: string;
     startHour: number; // 0-23
     duration: number; // em horas
-    type: 'work' | 'personal';
+    type: 'Festa' | 'Feriado' | 'Férias' | 'Trabalho' | 'Pessoal';
     day: number; // dia do mês
 }
 
@@ -31,7 +32,32 @@ export const getWeekDay = (year: number, monthIndex: number, day: number) => {
 export const generateMockEvents = (day: number): CalendarEvent[] => {
     if (day % 2 !== 0) return [];
     return [
-        { id: `evt-${day}-1`, title: 'Reunião Status', startHour: 9, duration: 1.5, type: 'work', day },
-        { id: `evt-${day}-2`, title: 'Entrega Projeto', startHour: 14, duration: 1, type: 'personal', day }
+        {
+            id: `evt-${day}-1`,
+            title: 'Reunião de Alinhamento',
+            description: 'Discutir as metas do calendário e alinhar expectativas com a equipe de desenvolvimento PWA.',
+            type: 'Trabalho',
+            startHour: 9,
+            duration: 1.5,
+            day
+        },
+        {
+            id: `evt-${day}-2`,
+            title: 'Almoço com Equipe',
+            description: 'Confraternização entre a equipe.',
+            type: 'Festa',
+            startHour: 12.5,
+            duration: 1.5,
+            day
+        },
+        {
+            id: `evt-${day}-3`,
+            title: 'Entrega Projeto',
+            description: 'Finalizar documentação e subir para o repositório.',
+            type: 'Pessoal',
+            startHour: 15,
+            duration: 1,
+            day
+        }
     ];
 };

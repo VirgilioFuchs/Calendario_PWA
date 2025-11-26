@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { WEEK_DAYS, MONTH_NAMES, generateMockEvents } from '../types';
+import { WEEK_DAYS, MONTH_NAMES, generateMockEvents, type CalendarEvent } from '../types';
 import { useDragScroll } from '../hooks/useDragScroll';
 
 interface DayViewProps {
@@ -7,10 +7,11 @@ interface DayViewProps {
     currentMonthIdx: number;
     selectedDay: number;
     onBack: () => void;
+    onEventClick: (event:CalendarEvent) => void;
 }
 
 //Campo de vizualização de dias
-const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selectedDay, onBack }) => {
+const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selectedDay, onBack, onEventClick }) => {
     // Hook para arrastar e rolar pelo mouse do computador
     const containerRef = useDragScroll<HTMLDivElement>();
     const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
@@ -63,8 +64,9 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
                                 {events.filter(e => Math.floor(e.startHour) === hour).map(evt => (
                                     <div
                                         key={evt.id}
-                                        className={`absolute left-1 right-1 rounded-md p-2 text-xs border-l-4 shadow-sm overflow-hidden pointer-events-none
-                                        ${evt.type === 'work'
+                                        onClick={() => onEventClick(evt)} // AÇÃO DE CLIQUE AQUI
+                                        className={`absolute left-1 right-1 rounded-md p-2 text-xs border-l-4 shadow-sm overflow-hidden cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all
+                                        ${evt.type === 'Trabalho'
                                             ? 'bg-gray-100 text-black border-black'
                                             : 'bg-neutral-800 text-white border-gray-500'
                                         }`}
@@ -75,6 +77,7 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
                                         }}
                                     >
                                         <div className="font-semibold">{evt.title}</div>
+                                        {evt.duration > 0.5 && <div className="opacity-70 text-[10px] uppercase m-1">{evt.type}</div> }
                                     </div>
                                 ))}
                             </div>
