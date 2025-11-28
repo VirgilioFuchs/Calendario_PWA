@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { getDaysInMonth, getWeekDay, MONTH_NAMES } from '../types';
+import { getDaysInMonth, getWeekDay } from '../types';
 import { useDragScroll } from '../hooks/useDragScroll';
 
 interface FooterStripProps {
@@ -36,7 +36,6 @@ const FooterStrip: React.FC<FooterStripProps> = ({ currentYear, currentMonthIdx,
             >
                 {days.map(day => {
                     const isSelected = day === selectedDay;
-                    const hasEvent = day % 2 === 0;
                     const weekLetter = getWeekDay(currentYear, currentMonthIdx, day);
                     const dateObj = new Date(currentYear, currentMonthIdx, day);
                     const dayOfWeek = dateObj.getDay();
@@ -56,10 +55,6 @@ const FooterStrip: React.FC<FooterStripProps> = ({ currentYear, currentMonthIdx,
                         >
                             <span className="text-[9px] uppercase mb-0.5">{weekLetter}</span>
                             <span className="text-lg font-bold leading-none">{day}</span>
-                            <div className={`w-1 h-1 rounded-full mt-1 transition-opacity 
-                                ${isSelected ? 'bg-white' : (isWeekend ? 'bg-gray-300' : 'bg-black')} 
-                                ${hasEvent ? 'opacity-100' : 'opacity-0'}`}
-                            />
                         </div>
                     );
                 })}

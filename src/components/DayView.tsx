@@ -18,6 +18,15 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
     const events = useMemo(() => generateMockEvents(selectedDay), [selectedDay]);
     const headerDate = new Date(currentYear, currentMonthIdx, selectedDay);
     const dayTitle =`${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
+    const getEventStyle = (type: string) => {
+        switch (type) {
+            case 'Trabalho': return 'bg-gray-100 text-gray-700 border-black';
+            case 'Férias':   return 'bg-green-100 text-green-800 border-green-600';
+            case 'Feriado':  return 'bg-red-100 text-red-800 border-red-500';
+            case 'Festa':    return 'bg-purple-100 text-purple-800 border-purple-500';
+            default:         return 'bg-blue-50 text-blue-800 border-blue-500';
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden animate-fade-in bg-white h-full relative z-50">
@@ -66,10 +75,7 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
                                         key={evt.id}
                                         onClick={() => onEventClick(evt)} // AÇÃO DE CLIQUE AQUI
                                         className={`absolute left-1 right-1 rounded-md p-2 text-xs border-l-4 shadow-sm overflow-hidden cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all
-                                        ${evt.type === 'Trabalho'
-                                            ? 'bg-gray-100 text-black border-black'
-                                            : 'bg-neutral-800 text-white border-gray-500'
-                                        }`}
+                                        ${getEventStyle(evt.type)}`}
                                         style={{
                                             top: `${(evt.startHour % 1) * 100}%`,
                                             height: `${evt.duration * 100}%`,

@@ -1,17 +1,19 @@
 import React, {useEffect} from 'react';
 import {MONTH_NAMES, WEEK_DAYS, getDaysInMonth} from '../types';
 import {useDragScroll} from '../hooks/useDragScroll';
+import { motion } from 'framer-motion';
 
 // Propriedaes do componente YearView
 interface YearViewProps {
     currentYear: number;
     initialMonthIdx: number;
-    onMonthClick: (monthIdx: number) => void;
+    onMonthClick: (monthIdx: number, coords: { x: number, y: number }) => void;
 }
 
 // Vizualização mensal
 const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMonthClick}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
+    const months = Array.from({length: 12}, (_, i) => i);
 
     // Auto-scroll inicial apenas para centralizar o mês selecionado
     useEffect(() => {
@@ -21,7 +23,20 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
         }, 100);
     }, [initialMonthIdx]);
 
-    const months = Array.from({length: 12}, (_, i) => i);
+    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, mIdx: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const container = containerRef.current?.getBoundingClientRect();
+
+        let x = rect.left + rect.width / 2;
+        let y = rect.top + rect.height / 2;
+
+        if (container) {
+            x = x - container.left;
+            y = y - container.top;
+        }
+
+        onMonthClick(mIdx, { x, y });
+    };
 
     return (
         <div
@@ -39,11 +54,13 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                     const trailingBlanks =Array.from({ length: totalSlots - usedSlots}, (_, i) => i);
 
                     return (
-                        <div
+                        <motion.div
                             key={mIdx}
                             id={`month-card-${mIdx}`}
+                            layoutId={`month-card-${mIdx}`}
                             data-month-name={`${MONTH_NAMES[mIdx]} ${currentYear}`}
-                            onClick={() => onMonthClick(mIdx)}
+                            onClick={(e) => handleCardClick(e, mIdx)}
+
                             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm active:scale-[0.98] transition-transform cursor-pointer hover:border-black/20 flex flex-col"
                         >
                             {/* Título do Mês Centralizado */}
@@ -75,17 +92,13 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                                                 ? 'text-gray-300 font-normal'
                                                 : 'text-gray-900 font-bold'}`}
                                         >
-                                            {d}
-                                            {d % 5 === 0 && (
-                                                <div className={`absolute bottom-0.5 w-0.5 h-0.5 rounded-full
-                                                ${isWeekend ? 'bg-gray-300' : 'bg-black'}`}/>
-                                            )}
+                                            {d} {/* Dias números dos meses */}
                                         </div>
                                     );
                                 })}
                                 {trailingBlanks.map(b => <div key={`trail-${b}`} className="h-5" />)}
                             </div>
-                        </div>
+                        </motion.div>
                     );
                 })}
             </div>

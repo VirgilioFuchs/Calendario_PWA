@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-
+import {AnimatePresence} from "framer-motion";
+import {motion} from "framer-motion";
 import Header from './components/Header';
 import DayView from './components/DayView';
 import YearView from './components/YearView.tsx';
@@ -20,9 +21,45 @@ const App: React.FC = () => {
     const [selectedMonthIdx, setSelectedMonthIdx] = useState(10); // Default Novembro
     const [selectedDay, setSelectedDay] = useState(13);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
+    const [direction, setDirection] = useState<'in' | 'out'>('in');
+
+    const pageVariants = {
+        // Estado Inicial
+        initial: (custom: { x: number, y: number, dir: 'in' | 'out' }) => ({
+            scale: custom.dir === 'in' ? 0.4 : 1.5,
+            opacity: 0,
+            transformOrigin: `${custom.x}px ${custom.y}px`,
+            filter: 'blur(4px)'
+        }),
+        // Estado Visível
+        animate: (custom: { x: number, y: number }) => ({
+            scale: 1,
+            opacity: 1,
+            transformOrigin: `${custom.x}px ${custom.y}px`,
+            filter: 'blur(0px)',
+            transition: {
+                duration: 0.45,
+                ease: [0.32, 0.72, 0, 1] as const
+            }
+        }),
+        // Estado de Saída
+        exit: (custom: { x: number, y: number, dir: 'in' | 'out' }) => ({
+            scale: custom.dir === 'in' ? 1.5 : 0.4,
+            opacity: 0,
+            transformOrigin: `${custom.x}px ${custom.y}px`,
+            filter: 'blur(4px)',
+            transition: {
+                duration: 0.45,
+                ease: [0.32, 0.72, 0, 1] as const
+            }
+        })
+    };
 
     // --- HANDLERS DE NAVEGAÇÃO ---
-    const handleMonthSelect = (monthIdx: number) => {
+    const handleMonthSelect = (monthIdx: number, coords: {x: number, y: number}) => {
+        setZoomOrigin(coords);
+        setDirection('in');
         setSelectedMonthIdx(monthIdx);
         setNavLevel('month_detail');
     };
@@ -42,7 +79,10 @@ const App: React.FC = () => {
     }
 
     const handleBackToMonth = () => setNavLevel('month_detail');
-    const handleBackToYear = () => setNavLevel('year_list');
+    const handleBackToYear = () => {
+        setDirection('out');
+        setNavLevel('year_list');
+    }
 
     const handleBackFromEvent = () => {
         setNavLevel(previousNavLevel)
@@ -64,47 +104,71 @@ const App: React.FC = () => {
 
             <main className="flex-1 relative flex flex-col overflow-hidden">
 
-                {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
-                {navLevel === 'year_list' && (
-                    <YearView
-                        currentYear={year}
-                        initialMonthIdx={selectedMonthIdx}
-                        onMonthClick={handleMonthSelect}
-                    />
-                )}
+                <AnimatePresence mode="popLayout" custom={{...zoomOrigin, dir: direction}}>
+                    {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
+                    {navLevel === 'year_list' && (
+                        <motion.div
+                            key="year-list"
+                            className="flex-1 h-full w-full absolute inset-0 bg-white"
+                            // Passamos as coordenadas e direção para a animação
+                            custom={{ ...zoomOrigin, dir: direction }}
+                            variants={pageVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            style={{ zIndex: 10 }} // YearView fica atrás ao sair
+                        >
+                            <YearView
+                                currentYear={year}
+                                initialMonthIdx={selectedMonthIdx}
+                                onMonthClick={handleMonthSelect}
+                            />
+                        </motion.div>
+                    )}
 
-                {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
-                {navLevel === 'month_detail' && (
-                    <MonthView
-                        year={year}
-                        monthIdx={selectedMonthIdx}
-                        onBack={handleBackToYear}
-                        onDayClick={handleDaySelect}
-                    />
-                )}
+                    {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
+                    {navLevel === 'month_detail' && (
+                        <motion.div
+                            key="month-detail"
+                            className="flex-1 h-full w-full absolute inset-0 bg-white"
+                            custom={{ ...zoomOrigin, dir: direction }}
+                            variants={pageVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            style={{ zIndex: 20 }} // MonthView fica na frente ao entrar
+                        >
+                            <MonthView
+                                year={year}
+                                monthIdx={selectedMonthIdx}
+                                onBack={handleBackToYear}
+                                onDayClick={handleDaySelect}
+                            />
+                        </motion.div>
+                    )}
 
-                {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
-                {navLevel === 'day_detail' && (
-                    <DayView
-                        currentYear={year}
-                        currentMonthIdx={selectedMonthIdx}
-                        selectedDay={selectedDay}
-                        onBack={handleBackToMonth}
-                        onEventClick={handleEventSelect}
-                    />
-                )}
+                    {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
+                    {navLevel === 'day_detail' && (
+                        <DayView
+                            currentYear={year}
+                            currentMonthIdx={selectedMonthIdx}
+                            selectedDay={selectedDay}
+                            onBack={handleBackToMonth}
+                            onEventClick={handleEventSelect}
+                        />
+                    )}
 
 
-                {navLevel === 'event_detail' && selectedEvent && (
-                    <EventDetailView
-                        event={selectedEvent}
-                        currentYear={year}
-                        currentMonthIdx={selectedMonthIdx}
-                        previousView={previousNavLevel}
-                        onBack={handleBackFromEvent}
-                    />
-                )}
-
+                    {navLevel === 'event_detail' && selectedEvent && (
+                        <EventDetailView
+                            event={selectedEvent}
+                            currentYear={year}
+                            currentMonthIdx={selectedMonthIdx}
+                            previousView={previousNavLevel}
+                            onBack={handleBackFromEvent}
+                        />
+                    )}
+                </AnimatePresence>
             </main>
 
             {showFooter && (

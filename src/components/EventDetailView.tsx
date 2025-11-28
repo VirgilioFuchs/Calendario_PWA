@@ -12,6 +12,15 @@ interface EventDetailViewProps {
 const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, currentMonthIdx, previousView, onBack }) => {
 
     const HOUR_HEIGHT = 80;
+    const getCategoryColor = (cat: string) => {
+        switch(cat) {
+            case 'Trabalho': return 'bg-gray-100 text-gray-800 border-black';
+            case 'Férias':   return 'bg-green-100 text-green-800 border-green-600';
+            case 'Feriado':  return 'bg-red-100 text-red-800 border-red-500';
+            case 'Festa':    return 'bg-purple-100 text-purple-800 border-purple-500';
+            default:         return 'bg-blue-50 text-blue-800 border-blue-500';
+        }
+    };
     // Formatação de Data
     const dateObj = new Date(currentYear, currentMonthIdx, event.day);
     const dayOfWeek = WEEK_DAYS[dateObj.getDay()]; // "Segunda-feira"
@@ -39,32 +48,19 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
         ? MONTH_NAMES[currentMonthIdx]
         : 'Voltar';
 
-    // Cor baseada na categoria
-    const getCategoryColor = (cat: string) => {
-        switch(cat) {
-            case 'Festa': return 'bg-purple-100 text-purple-700 border-purple-200';
-            case 'Feriado': return 'bg-red-100 text-red-700 border-red-200';
-            case 'Férias': return 'bg-green-100 text-green-700 border-green-200';
-            case 'Trabalho': return 'bg-gray-100 text-gray-800 border-gray-200';
-            default: return 'bg-blue-50 text-blue-700 border-blue-100';
-        }
-    };
-
     // Estilo do Card do Evento na Timeline
     const getEventCardStyles = () => {
         const relativeStartHour = event.startHour - startViewHour;
 
         return {
-            top: `${relativeStartHour * HOUR_HEIGHT}px`,     // Posição exata baseada na altura da linha
-            height: `${event.duration * HOUR_HEIGHT}px`,      // Altura exata baseada na duração
-            minHeight: '50px' // Altura mínima para não ficar invisível se for muito curto
+            top: `${relativeStartHour * HOUR_HEIGHT}px`,
+            height: `${event.duration * HOUR_HEIGHT}px`,
+            minHeight: '50px'
         };
     };
 
     return (
         <div className="flex-1 flex flex-col bg-white h-full animate-fade-in z-50 overflow-y-auto">
-
-            {/* --- HEADER FIXO --- */}
             <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 py-3 z-30 flex items-center">
                 <button onClick={onBack} className="flex items-center gap-1 hover:opacity-70 transition-opacity text-black">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -92,26 +88,22 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
                             {startTime} <span className="text-gray-400 font-normal mx-1">até</span> {endTime}
                         </div>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase border ${getCategoryColor(event.type)}`}>
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase border-l-4 ${getCategoryColor(event.type)}`}>
                         {event.type}
                     </div>
                 </div>
 
-                {/* --- TIMELINE --- */}
+                {/* TIMELINE */}
                 <div className="mb-10 relative">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Timeline</h3>
-
-                    {/* Container Relativo sem margem direita */}
                     <div className="relative">
 
-                        {/* Linhas Horizontais + Hora na Esquerda */}
                         {timeSlots.map(hour => (
                             <div
                                 key={hour}
-                                className="relative border-b border-gray-100" // Apenas linha horizontal
+                                className="relative border-b border-gray-100"
                                 style={{ height: `${HOUR_HEIGHT}px` }}
                             >
-                                {/* Texto da hora movido para a direita (right-0) e sem bolinha */}
                                 <span className="text-sm font-medium text-gray-300 absolute -top-2.5 left-0 bg-white pl-2">
                                     {hour.toString().padStart(2, '0')}:00
                                 </span>
@@ -120,9 +112,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
 
                         {/* O EVENTO */}
                         <div
-                            // left-0 e right-14 para deixar espaço para o horário na direita
                             className={`absolute left-14 right-0 rounded-xl p-4 shadow-sm border-l-4 flex flex-col justify-center overflow-hidden z-20
-                            ${event.type === 'Trabalho' ? 'bg-neutral-800 text-white border-black' : 'bg-blue-50 text-blue-900 border-blue-500'}
+                            ${getCategoryColor(event.type)}
                             `}
                             style={getEventCardStyles()}
                         >
@@ -140,7 +131,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
                     </div>
                 </div>
 
-                {/* Descrição (Agora ficará corretamente abaixo da timeline) */}
+                {/* DESCRIÇÃO */}
                 <div className="pb-8">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Descrição</h3>
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-gray-700 leading-relaxed text-sm">

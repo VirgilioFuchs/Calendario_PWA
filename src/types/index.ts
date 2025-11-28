@@ -6,7 +6,7 @@ export interface CalendarEvent {
     description: string;
     startHour: number; // 0-23
     duration: number; // em horas
-    type: 'Festa' | 'Feriado' | 'Férias' | 'Trabalho' | 'Pessoal';
+    type: 'Festa' | 'Feriado' | 'Férias' | 'Trabalho';
     day: number; // dia do mês
 }
 
@@ -52,9 +52,9 @@ export const generateMockEvents = (day: number): CalendarEvent[] => {
         },
         {
             id: `evt-${day}-3`,
-            title: 'Entrega Projeto',
-            description: 'Finalizar documentação e subir para o repositório.',
-            type: 'Pessoal',
+            title: 'Independencia do Brasil',
+            description: 'Independência ou morte! Comemoração da independência do Brasil.',
+            type: 'Feriado',
             startHour: 15,
             duration: 1,
             day

@@ -1,12 +1,14 @@
 import React, {useState} from "react";
 
+
 // Lista de Legendas (linkar com a API)
 const EVENT_LEGEND = [
-    {label: 'Trabalho / Profissional', color: 'bg-black'},
-    {label: 'Pessoal / Lazer', color: 'bg-gray-300'},
-    {label: 'Feriado', color: 'bg-red-500'},
+    { label: 'Trabalho', class: 'bg-gray-100 text-gray-700 border-l-4 border-gray-500' },
+    { label: 'Férias',   class: 'bg-green-100 text-green-800 border-l-4 border-green-600' },
+    { label: 'Feriado',  class: 'bg-red-100 text-red-800 border-l-4 border-red-500' },
+    { label: 'Festa',    class: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500' },
+    { label: 'Lazer',    class: 'bg-blue-50 text-blue-800 border-l-4 border-blue-500' },
 ]
-
 
 const FooterConfig: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(false)
@@ -16,14 +18,13 @@ const FooterConfig: React.FC = () => {
 
     return (
         <>
-            {/* Evita pulos no layout quando a barra vira 'fixed' */}
             {isExpanded && <div className="h-12 w-full shrink-0 bg-white" />}
 
             <div
                 className={`border-t border-gray-200 bg-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden flex flex-col
                 ${isExpanded
-                    ? 'fixed inset-0 z-[100]' // Expandido: Tela cheia
-                    : 'relative h-12 shrink-0 z-40' // Fechado: Barra no rodapé
+                    ? 'fixed inset-0 z-[100]'
+                    : 'relative h-12 shrink-0 z-40'
                 }`}
             >
                 <div
@@ -31,26 +32,9 @@ const FooterConfig: React.FC = () => {
                     className="shrink-0 h-12 flex items-center justify-center gap-1 px-6 cursor-pointer hover:bg-gray-50 transition-colors select-none"
                 >
                     <div className="flex items-center gap-3">
-                        {isExpanded ? (
-                            <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
-                                Legendas
-                            </span>
-                        ) : (
-                            <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
-                                Legendas
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {/* Preview das cores (Fazer ligacação com eventos e depois a API) */}
-                        {!isExpanded && (
-                            <div className="flex -space-x-1 opacity-60">
-                                {EVENT_LEGEND.map((item, i) => (
-                                    <div key={i} className={`w-2 h-2 rounded-full ring-1 ring-white ${item.color}`} />
-                                ))}
-                            </div>
-                        )}
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
+                            Legendas
+                        </span>
                     </div>
                 </div>
 
@@ -62,16 +46,18 @@ const FooterConfig: React.FC = () => {
                         Tipos de Eventos
                     </h2>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {EVENT_LEGEND.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                                <div className={`w-8 h-8 rounded-lg shadow-sm border border-black/5 shrink-0 ${item.color}`} />
+                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
+                                {/* Caixa de Exemplo com a cor real */}
+                                <div className={`w-12 h-10 rounded shadow-sm flex items-center justify-center text-[10px] font-bold ${item.class}`}/>
+
                                 <div className="flex flex-col">
                                     <span className="text-base font-bold text-gray-900">
                                         {item.label}
                                     </span>
-                                    <span className="text-xs text-gray-500 mt-0.5">
-                                        Descrição do evento...
+                                    <span className="text-xs text-gray-400">
+                                        Cor padrão para eventos de {item.label.toLowerCase()}
                                     </span>
                                 </div>
                             </div>
