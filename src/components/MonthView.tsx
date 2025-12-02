@@ -1,30 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { MONTH_NAMES, WEEK_DAYS_ABREVIATED, getDaysInMonth, generateMockEvents } from '../types';
-import { useDragScroll } from '../hooks/useDragScroll';
-import {motion} from 'framer-motion';
+import React, {useEffect, useState, useRef} from 'react';
+import {MONTH_NAMES, WEEK_DAYS_ABREVIATED, getDaysInMonth, generateMockEvents} from '../types';
+import {useDragScroll} from '../hooks/useDragScroll';
 
 interface MonthDetailProps {
     year: number;
     monthIdx: number;
     onBack: () => void;
-    onDayClick: (monthIdx:number, day: number) => void;
+    onDayClick: (monthIdx: number, day: number) => void;
+    zoomOrigin?: { x: number, y: number };
 }
 
-const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayClick }) => {
+const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick, zoomOrigin}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
 
     // Estado para o título fixo (Scroll Spy)
     const [visibleMonthIdx, setVisibleMonthIdx] = useState(monthIdx);
-    const months = Array.from({ length: 12 }, (_, i) => i);
+    const months = Array.from({length: 12}, (_, i) => i);
+    const headerOffset = 110; // Espaço reservado para o header fixo
+    const isInitialScroll = useRef(true);
 
     // Cores do evento
     const getEventStyle = (type: string) => {
         switch (type) {
-            case 'Trabalho': return 'bg-gray-100 text-gray-700 border border-gray-200';
-            case 'Férias':   return 'bg-green-100 text-green-700 border border-green-200';
-            case 'Feriado':  return 'bg-red-100 text-red-700 border border-red-200';
-            case 'Festa':    return 'bg-purple-100 text-purple-700 border border-purple-200';
-            default:         return 'bg-blue-50 text-blue-700 border border-blue-100';
+            case 'Trabalho':
+                return 'bg-gray-100 text-gray-700 border border-gray-200';
+            case 'Férias':
+                return 'bg-green-100 text-green-700 border border-green-200';
+            case 'Feriado':
+                return 'bg-red-100 text-red-700 border border-red-200';
+            case 'Festa':
+                return 'bg-purple-100 text-purple-700 border border-purple-200';
+            default:
+                return 'bg-blue-50 text-blue-700 border border-blue-100';
         }
     };
 
@@ -32,8 +39,10 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
+
+                if (isInitialScroll.current) return;
+
                 entries.forEach((entry) => {
-                    // isIntersecting: true quando o elemento entra na "zona ativa" definida pelo rootMargin
                     if (entry.isIntersecting) {
                         const idx = Number(entry.target.getAttribute('data-month-index'));
                         if (!isNaN(idx)) setVisibleMonthIdx(idx);
@@ -42,7 +51,7 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
             },
             {
                 root: containerRef.current,
-                threshold: 0.7
+                threshold: 0.65
             }
         );
 
@@ -54,53 +63,60 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
 
     // Scroll inicial para o mês selecionado
     useEffect(() => {
-        setTimeout(() => {
+        setVisibleMonthIdx(monthIdx);
+        isInitialScroll.current = true;
+
+        const timeoutId = setTimeout(() => {
             const section = document.getElementById(`month-detail-section-${monthIdx}`);
             if (section && containerRef.current) {
-                containerRef.current.scrollTop = section.offsetTop - 180;
+                containerRef.current.scrollTop = section.offsetTop;
+
+                setTimeout(() => {
+                    isInitialScroll.current = false;
+                }, 100);
             }
-        }, 100);
+        }, 50);
+
+        return () => clearTimeout(timeoutId)
     }, [containerRef, monthIdx]);
 
     return (
-        <motion.div
-            initial={{opacity: 0, y: -20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{delay: 0.5}}
-            className="flex-1 flex flex-col bg-white h-full animate-fade-in relative z-50"
-        >
+        <div className="flex-1 flex flex-col bg-white h-full relative z-50">
 
             {/* HEADER FIXO */}
-            <div className="bg-white/95 backdrop-blur-sm z-30 shadow-sm relative transition-all duration-300 border-b border-gray-300">
+            <div
+                className="bg-white/95 backdrop-blur-sm z-30 shadow-sm relative transition-all duration-300 border-b border-gray-300">
                 <div className="flex items-center justify-between px-4 py-2">
                     <button
                         onClick={onBack}
                         className="flex items-center gap-1  hover:opacity-70 transition-opacity"
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                                  strokeLinejoin="round"/>
                         </svg>
                         <span className="text-base font-semibold leading-none pb-0.5">{year}</span>
                     </button>
 
                     {/* Lupa para pesquisa de eventos - desenvolver a pesquisa ainda*/}
                     <button className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors text-black">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                     </button>
                 </div>
 
-                {/* Título do Mês  */}
-                <div className="px-4 pb-2">
+                {/* Título do Mês */}
+                <div className="px-4 pb-1">
                     <h1 className="text-3xl font-extrabold text-black tracking-tight">
                         {MONTH_NAMES[visibleMonthIdx]}
                     </h1>
                 </div>
 
                 {/* Dias da Semana */}
-                <div className="grid grid-cols-7 gap-0 px-0 pb-2">
+                <div className="grid grid-cols-7 gap-0 px-0 pb-1">
                     {WEEK_DAYS_ABREVIATED.map((d, idx) => (
                         <div
                             key={d}
@@ -116,20 +132,24 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
             {/* ÁREA DE ROLAGEM DOS MESES */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-y-auto cursor-grab active:cursor-grabbing select-none scroll-smooth bg-white"
+                className="flex-1 overflow-y-auto overflow-x-hidden cursor-grab active:cursor-grabbing select-none scroll-smooth bg-white animate-zoom-in origin-top-left"
+                style={{
+                    transformOrigin: zoomOrigin ? `${zoomOrigin.x}px ${Math.max(0, zoomOrigin.y - headerOffset)}px` : 'center'
+                }}
             >
                 {months.map((mIdx) => {
                     const daysInMonth = getDaysInMonth(year, mIdx);
                     const firstDayIdx = new Date(year, mIdx, 1).getDay();
-                    const blanks = Array.from({ length: firstDayIdx }, (_, i) => i);
-                    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                    const blanks = Array.from({length: firstDayIdx}, (_, i) => i);
+                    const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+                    const isDecember = mIdx === 11;
 
                     return (
                         <div
                             key={mIdx}
                             id={`month-detail-section-${mIdx}`}
                             data-month-index={mIdx}
-                            className="month-grid-section mb-6" // Pequena margem entre meses
+                            className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
                         >
                             {/* Grade Edge-to-Edge (Sem gap, com bordas) */}
                             <div className="grid grid-cols-7 gap-0">
@@ -154,21 +174,24 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
                                     return (
                                         <div
                                             key={d}
-                                            onClick={() => onDayClick(mIdx,d)}
-                                            className={`min-h-[110px] flex flex-col items-center justify-start p-1 pt-2 border-t border-r border-gray-100 relative transition-colors cursor-pointer hover:bg-gray-50 active:scale-[0.99]
+                                            onClick={() => onDayClick(mIdx, d)}
+                                            className={`min-h-[110px] flex flex-col items-center justify-start px-1 pt-2 border-t border-gray-100 relative transition-colors cursor-pointer hover:bg-gray-50 active:scale-[0.99]
                                             ${isWeekend ? 'bg-gray-50/50' : 'bg-white'}`}
                                         >
                                             {/* Nome do Mês no Dia 1 */}
                                             {isFirstDay && (
-                                                <span className="text-[9px] font-semibold uppercase text-black absolute -top-5 left-1/2 -translate-x-1/2 bg-white px-2 z-10">
-                                                    {MONTH_NAMES[mIdx]}
-                                                </span>
+                                                <div className="w-full text-left pl-1 mb-1">
+                                                    <span
+                                                        className="text-xl font-black text-black uppercase tracking-tight leading-none block">
+                                                            {MONTH_NAMES[mIdx]}
+                                                    </span>
+                                                </div>
                                             )}
 
                                             {/* Número do Dia */}
                                             <span className={`text-sm mb-3 leading-none
-                                            ${isWeekend 
-                                                ? 'text-gray-400 font-normal' 
+                                            ${isWeekend
+                                                ? 'text-gray-400 font-normal'
                                                 : 'text-gray-900 font-extrabold'}
                                             `}>
                                                 {d}
@@ -182,7 +205,7 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
                                                         <div
                                                             key={evt.id}
                                                             className={`
-                                                                block w-full max-w-full truncate rounded-[2px] px-1 py-0 text-[8.5px] leading-[11px] font-semibold border-l-[3px] text-left
+                                                                block w-auto max-w-full truncate rounded-[2px] px-1 py-0 text-[8.5px] leading-[11px] font-semibold border-l-[3px] text-left mx-0.5
                                                                 ${getEventStyle(evt.type)}
                                                             `}
                                                             title={evt.title}
@@ -208,11 +231,8 @@ const MonthView: React.FC<MonthDetailProps> = ({ year, monthIdx, onBack, onDayCl
                         </div>
                     );
                 })}
-
-                {/* Espaço final */}
-                <div className="h-12"/>
             </div>
-        </motion.div>
+        </div>
     );
 };
 export default MonthView;
