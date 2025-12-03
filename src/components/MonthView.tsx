@@ -18,6 +18,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const months = Array.from({length: 12}, (_, i) => i);
     const headerOffset = 110; // Espaço reservado para o header fixo
     const isInitialScroll = useRef(true);
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
 
     // Cores do evento
     const getEventStyle = (type: string) => {
@@ -141,7 +145,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                     const daysInMonth = getDaysInMonth(year, mIdx);
                     const firstDayIdx = new Date(year, mIdx, 1).getDay();
                     const blanks = Array.from({length: firstDayIdx}, (_, i) => i);
-                    const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+                    const days = Array.from({length: daysInMonth}, (_center, i) => i + 1);
                     const isDecember = mIdx === 11;
 
                     return (
@@ -167,6 +171,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                     const dayOfWeek = dateObj.getDay();
                                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0=Domingo e 6=Sábado
                                     const isFirstDay = d === 1;
+                                    const isToday = d === currentDay && mIdx === currentMonth && year === currentYear;
                                     const allEvents = generateMockEvents(d);
                                     const visibleEvents = allEvents.slice(0, 2);
                                     const remainingEvents = allEvents.length - 2;
@@ -180,22 +185,23 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                         >
                                             {/* Nome do Mês no Dia 1 */}
                                             {isFirstDay && (
-                                                <div className="w-full text-left pl-1 mb-1">
-                                                    <span
-                                                        className="text-xl font-black text-black uppercase tracking-tight leading-none block">
-                                                            {MONTH_NAMES[mIdx]}
+                                                <div className="absolute -top-[1.6rem] items-center z-10">
+                                                    <span className="text-xl font-balck text-black captalize tracking-tight leading-none">
+                                                        {MONTH_NAMES[mIdx].substring(0,3)}
                                                     </span>
                                                 </div>
                                             )}
 
-                                            {/* Número do Dia */}
-                                            <span className={`text-sm mb-3 leading-none
-                                            ${isWeekend
-                                                ? 'text-gray-400 font-normal'
-                                                : 'text-gray-900 font-extrabold'}
-                                            `}>
-                                                {d}
-                                            </span>
+                                            {/*Destaque do dia de hoje*/}
+                                            <div className="mb-2 mt-0.5">
+                                                <span className={`
+                                                text-sm leading-none flex items-center justify-center w-7 h-7 rounded-full
+                                                ${isToday
+                                                    ? 'bg-black text-white font-bold shadow-md' : ''
+                                                }`}>
+                                                    {d}
+                                                </span>
+                                            </div>
 
                                             <div className="mt-auto w-full px-0.5 pb-0.5 flex flex-col gap-[1px]">
 

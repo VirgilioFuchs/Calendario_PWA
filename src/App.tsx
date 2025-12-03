@@ -58,7 +58,7 @@ const App: React.FC = () => {
 
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
-    const showLegend = navLevel === 'event_detail';
+    const showLegend = navLevel !== 'event_detail';
 
     return (
         <div className="flex flex-col h-screen bg-white text-black font-sans overflow-hidden">
@@ -129,10 +129,11 @@ const App: React.FC = () => {
                     currentMonthIdx={selectedMonthIdx}
                     selectedDay={selectedDay}
                     onSelectDay={setSelectedDay}
+                    className={showLegend ? 'bottom-12 border-b border-gray-100' : 'bottom-0'}
                 />
             )}
 
-            {!showLegend && (
+            {showLegend && (
                 <FooterConfig />
             )}
         </div>
