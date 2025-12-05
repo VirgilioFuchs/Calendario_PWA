@@ -6,7 +6,7 @@ interface MonthDetailProps {
     year: number;
     monthIdx: number;
     onBack: () => void;
-    onDayClick: (monthIdx: number, day: number) => void;
+    onDayClick: (monthIdx: number, day: number, react?: DOMRect) => void;
     zoomOrigin?: { x: number, y: number };
 }
 
@@ -83,6 +83,11 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
         return () => clearTimeout(timeoutId)
     }, [containerRef, monthIdx]);
+
+    const handleDayClick = (e: React.MouseEvent<HTMLDivElement>, mIdx: number, d: number) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        onDayClick(mIdx, d, rect);
+    };
 
     return (
         <div className="flex-1 flex flex-col bg-white h-full relative z-50">
@@ -179,14 +184,14 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                     return (
                                         <div
                                             key={d}
-                                            onClick={() => onDayClick(mIdx, d)}
+                                            onClick={(e) => handleDayClick(e, mIdx, d)}
                                             className={`min-h-[110px] flex flex-col items-center justify-start px-1 pt-2 border-t border-gray-100 relative transition-colors cursor-pointer hover:bg-gray-50 active:scale-[0.99]
                                             ${isWeekend ? 'bg-gray-50/50' : 'bg-white'}`}
                                         >
                                             {/* Nome do Mês no Dia 1 */}
                                             {isFirstDay && (
                                                 <div className="absolute -top-[1.6rem] items-center z-10">
-                                                    <span className="text-xl font-balck text-black captalize tracking-tight leading-none">
+                                                    <span className="text-[15px] font-black text-black captalize tracking-tight leading-none">
                                                         {MONTH_NAMES[mIdx].substring(0,3)}
                                                     </span>
                                                 </div>
@@ -195,7 +200,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                             {/*Destaque do dia de hoje*/}
                                             <div className="mb-2 mt-0.5">
                                                 <span className={`
-                                                text-sm leading-none flex items-center justify-center w-7 h-7 rounded-full
+                                                text-sm font-sans leading-none flex items-center justify-center w-7 h-7 rounded-full
                                                 ${isToday
                                                     ? 'bg-black text-white font-bold shadow-md' : ''
                                                 }`}>

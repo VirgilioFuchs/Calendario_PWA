@@ -22,8 +22,10 @@ const App: React.FC = () => {
     // Animações
     const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
     const [direction, setDirection] = useState<'in' | 'out'>('in');
+    const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
+    const[isExitingDay, setIsExitingDay] = useState(false);
 
-    // --- HANDLERS DE NAVEGAÇÃO ---
+    // HANDLERS DE NAVEGAÇÃO
     const handleMonthSelect = (monthIdx: number, coords: {x: number, y: number}) => {
         setZoomOrigin(coords);
         setDirection('in');
@@ -31,9 +33,12 @@ const App: React.FC = () => {
         setNavLevel('month_detail');
     };
 
-    const handleDaySelect = (monthIdx: number, day: number) => {
+    const handleDaySelect = (monthIdx: number, day: number, rect?: DOMRect) => {
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
+        if (rect) {
+            setWeekAnimOriginY(rect.top)
+        }
         setNavLevel('day_detail');
     };
 
@@ -45,7 +50,14 @@ const App: React.FC = () => {
         setNavLevel('event_detail');
     }
 
-    const handleBackToMonth = () => setNavLevel('month_detail');
+    const handleBackToMonth = () => {
+        setIsExitingDay(true)
+        setTimeout(() => {
+            setNavLevel('month_detail');
+            setIsExitingDay(false);
+        }, 380);
+    };
+
     const handleBackToYear = () => {
         setDirection('out');
         setNavLevel('year_list');
@@ -54,6 +66,13 @@ const App: React.FC = () => {
     const handleBackFromEvent = () => {
         setNavLevel(previousNavLevel)
         setSelectedEvent(null)
+    }
+
+    const handleFooterDateSelect = (day: number, monthIdx: number) => {
+        setSelectedDay(day);
+        if (monthIdx !== selectedMonthIdx) {
+            setSelectedMonthIdx(monthIdx);
+        }
     }
 
     // Lógica de Exibição
@@ -101,14 +120,19 @@ const App: React.FC = () => {
                     )}
 
                     {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
-                    {navLevel === 'day_detail' && (
-                        <DayView
-                            currentYear={year}
-                            currentMonthIdx={selectedMonthIdx}
-                            selectedDay={selectedDay}
-                            onBack={handleBackToMonth}
-                            onEventClick={handleEventSelect}
-                        />
+                    {(navLevel === 'day_detail' || isExitingDay) && (
+                        <div
+                            className={`absolute inset-0 bg-white z-20 
+                        ${isExitingDay ? 'animate-slide-down-content' : 'animate-slide-up-content'}`}
+                        >
+                            <DayView
+                                currentYear={year}
+                                currentMonthIdx={selectedMonthIdx}
+                                selectedDay={selectedDay}
+                                onBack={handleBackToMonth}
+                                onEventClick={handleEventSelect}
+                            />
+                        </div>
                     )}
 
 
@@ -123,13 +147,18 @@ const App: React.FC = () => {
                     )}
             </main>
 
-            {showFooter && (
+            {(showFooter || isExitingDay) && (
                 <FooterStrip
                     currentYear={year}
                     currentMonthIdx={selectedMonthIdx}
                     selectedDay={selectedDay}
-                    onSelectDay={setSelectedDay}
-                    className={showLegend ? 'bottom-12 border-b border-gray-100' : 'bottom-0'}
+                    onSelectDay={handleFooterDateSelect}
+                    className={`
+                        ${showLegend ? 'bottom-12 border-b border-gray-100' : 'bottom-0'}
+                        ${isExitingDay ? 'animate-slide-down-footer' : 'animate-slide-up-footer'}
+                    `}
+                    animStartY={weekAnimOriginY}
+                    isExiting={isExitingDay}
                 />
             )}
 
