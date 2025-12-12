@@ -18,10 +18,10 @@ const FooterConfig: React.FC = () => {
 
     return (
         <>
-            {isExpanded && <div className="h-12 w-full shrink-0 bg-white" />}
+            {isExpanded && <div className="h-12 w-full shrink-0 bg-white dark:bg-slate-900" />}
 
             <div
-                className={`border-t border-gray-200 bg-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden flex flex-col
+                className={`border-t border-gray-400 dark:border-gray-700 bg-white dark:bg-slate-900 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden flex flex-col
                 ${isExpanded
                     ? 'fixed inset-0 z-[100]'
                     : 'relative h-12 shrink-0 z-40'
@@ -29,10 +29,10 @@ const FooterConfig: React.FC = () => {
             >
                 <div
                     onClick={toggleLegend}
-                    className="shrink-0 h-12 flex items-center justify-center gap-1 px-6 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+                    className="shrink-0 h-12 flex items-center justify-center gap-1 px-6 cursor-pointer bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors select-none"
                 >
                     <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold uppercase tracking-wide text-gray-800">
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-800 dark:text-gray-100">
                             Legendas
                         </span>
                     </div>
@@ -42,18 +42,18 @@ const FooterConfig: React.FC = () => {
                 <div className={`flex-1 overflow-y-auto px-6 pt-4 pb-10 transition-opacity duration-500 delay-100
                     ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 >
-                    <h2 className="text-2xl font-extrabold text-black tracking-tight mb-8">
+                    <h2 className="text-2xl font-extrabold text-black dark:text-white tracking-tight mb-8">
                         Tipos de Eventos
                     </h2>
 
                     <div className="space-y-4">
                         {EVENT_LEGEND.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
+                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm">
                                 {/* Caixa de Exemplo com a cor real */}
                                 <div className={`w-12 h-10 rounded shadow-sm flex items-center justify-center text-[10px] font-bold ${item.class}`}/>
 
                                 <div className="flex flex-col">
-                                    <span className="text-base font-bold text-gray-900">
+                                    <span className="text-base font-bold text-gray-900 dark:text-gray-100">
                                         {item.label}
                                     </span>
                                     <span className="text-xs text-gray-400">

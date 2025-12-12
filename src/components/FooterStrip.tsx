@@ -1,6 +1,6 @@
-import React, {useMemo, useEffect, useState} from 'react';
-import { WEEK_DAYS_ABREVIATED } from '../types';
-import { useDragScroll } from '../hooks/useDragScroll';
+import React, {useMemo, useEffect, useState, useRef} from 'react';
+import {WEEK_DAYS_ABREVIATED} from '../types';
+import {useDragScroll} from '../hooks/useDragScroll';
 
 interface FooterStripProps {
     currentYear: number;
@@ -25,6 +25,13 @@ const FooterStrip: React.FC<FooterStripProps> = ({
     const scrollRef = useDragScroll<HTMLDivElement>();
 
     const [offsetY, setOffSetY] = useState(0);
+
+    // Evitar conflito entre scroll do usuário e scroll automático
+    const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Dia da semana que vai manter
+    const currentFullDate = new Date(currentYear, currentMonthIdx, selectedDay);
+    const targetWeekDay = currentFullDate.getDay();
+
 
     // Logica animação E/S
     useEffect(() => {
@@ -93,6 +100,35 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
     }, [currentYear, currentMonthIdx]);
 
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget;
+        const width = container.clientWidth;
+        const scrollPos = container.scrollLeft;
+        const index = Math.round(scrollPos / width);
+
+        // Validação de índice
+        if (index < 0 || index >= weeks.length) return;
+
+        const targetWeek = weeks[index];
+        const dayToSelect = targetWeek.find(d => d.weekDay === targetWeekDay);
+
+        if (dayToSelect && !dayToSelect.isHidden) {
+            const isSameSelection = dayToSelect.day === selectedDay &&
+                dayToSelect.monthIdx === currentMonthIdx &&
+                dayToSelect.year === currentYear;
+
+            if (!isSameSelection) {
+                if(scrollTimeout.current) {
+                    clearTimeout(scrollTimeout.current)
+                }
+
+                scrollTimeout.current = setTimeout(() => {
+                    onSelectDay(dayToSelect.day, dayToSelect.monthIdx, dayToSelect.year)
+                }, 50);
+            }
+        }
+    };
+
     // Auto-scroll semanal (dom até sab)
     useEffect(() => {
         if (scrollRef.current) {
@@ -102,34 +138,43 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
             if (weekIndex !== -1) {
                 const containerWidth = scrollRef.current.clientWidth;
-                scrollRef.current.scrollTo({
-                    left: containerWidth * weekIndex,
-                    behavior: 'smooth'
-                });
+                const targetLeft = containerWidth * weekIndex;
+
+                if (Math.abs(scrollRef.current.scrollLeft - targetLeft) > 10) {
+                    scrollRef.current.scrollTo({
+                        left: targetLeft,
+                        behavior: 'smooth'
+                    });
+                }
             }
         }
-    }, [selectedDay, currentMonthIdx, currentYear, scrollRef, weeks]);
+    }, [selectedDay, currentMonthIdx, currentYear, weeks]);
 
     return (
-        <div style={{ transform: `translateY(${offsetY}px)` }}
-             className={`
-                h-20 bg-white/95 backdrop-blur-md border-t border-gray-200 fixed left-0 right-0 z-[60] flex items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] 
+        <div
+            style={{ transform: `translateY(${offsetY}px)` }}
+                className={`
+                h-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
+                border-t border-gray-400 dark:border-gray-700
+                fixed left-0 right-0 z-[60] flex items-center
+                shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.35)]
                 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1)
                 ${className}
             `}
         >
             <div
                 ref={scrollRef}
+                onScroll={handleScroll}
                 className="flex items-center w-full h-full overflow-x-auto scrollbar-hide snap-x snap-mandatory"
             >
                 {weeks.map((week, wIdx) => (
                     <div
                         key={`week-${wIdx}`}
-                        className="flex-none min-w-full w-full grid grid-cols-7 snap-center h-full"
+                        className="flex-none min-w-full w-full grid grid-cols-7 snap-center snap-always h-full"
                     >
                         {week.map((item) => {
                             if (item.isHidden) {
-                                return <div key={item.uniqueId} className="flex-1" />;
+                                return <div key={item.uniqueId} className="flex-1"/>;
                             }
 
                             const isSelected = item.day === selectedDay && item.monthIdx === currentMonthIdx;
@@ -142,20 +187,24 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                                     onClick={() => onSelectDay(item.day, item.monthIdx, item.year)}
                                     className="flex flex-col items-center justify-center h-full transition-all duration-200 group active:scale-95"
                                 >
-                                    <span className={`text-[9px] font-bold uppercase mb-1 transition-colors
-                                        ${isSelected ? 'text-black' : 'text-gray-400 group-hover:text-gray-600'}
-                                    `}>
+                                    <span
+                                        className={`text-[9px] font-bold uppercase mb-1 transition-colors
+                                        ${isSelected
+                                            ? 'text-black dark:text-white'
+                                            : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-200'
+                                        }`}
+                                    >
                                         {WEEK_DAYS_ABREVIATED[item.weekDay]}
                                     </span>
 
                                     <div className={`
-                                        w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm
+                                        w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm text-black dark:text-white
                                         ${isSelected
-                                        ? 'bg-black text-white scale-110 shadow-md'
+                                        ? 'bg-black text-white scale-110 shadow-md dark:bg-white dark:text-black'
                                         : isToday
-                                            ? 'bg-gray-200 text-black border border-gray-300' // HOJE (Destaque Secundário, verificar como quer deixar depois)
-                                            : ` ${isWeekend ? 'text-gray-400' : ''}`
-                                        }
+                                            ? 'bg-gray-200 text-black border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600' // HOJE (Destaque Secundário, verificar como quer deixar depois)
+                                            : ` ${isWeekend ? 'text-gray-400 dark:text-gray-400' : ''}
+                                            `}
                                     `}>
                                         {item.day}
                                     </div>

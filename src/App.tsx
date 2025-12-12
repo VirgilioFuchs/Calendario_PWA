@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import Header from './components/Header';
 import DayView from './components/DayView';
 import YearView from './components/YearView.tsx';
@@ -13,19 +13,81 @@ import './App.css';
 type NavLevel = 'year_list' | 'month_detail' | 'day_detail' | 'event_detail';
 
 const App: React.FC = () => {
+    // Calendário Estado
     const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
     const [previousNavLevel, setPreviousNavLevel] = useState<'month_detail' | 'day_detail'>('month_detail');
     const [year] = useState(2025);
     const [selectedMonthIdx, setSelectedMonthIdx] = useState(10); // Default Novembro
     const [selectedDay, setSelectedDay] = useState(13);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
     // Animações
+    const [daySlideDir, setDaySlideDir] = useState<'right' | 'left' | null>(null);
     const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
     const [direction, setDirection] = useState<'in' | 'out'>('in');
     const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
     const[isExitingDay, setIsExitingDay] = useState(false);
 
+    // Tema Inteligente
+    const [theme, setTheme] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+            }
+        }
+        return 'light';
+    });
+
+    //Classe HTML para tema
+    useEffect(() => {
+        const root = window.document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+    }, [theme]);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = (e: MediaQueryListEvent) => {
+            // SÓ muda automaticamente se o usuário NÃO tiver forçado uma preferência manual
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
+
+    // Função de Troca Manual (Botão)
+    const toggleTheme = () => {
+        setTheme(prev => {
+            const newTheme = prev === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            return newTheme;
+        });
+    };
+
     // HANDLERS DE NAVEGAÇÃO
+    const handleChangeDate = (day: number, monthIdx: number, targetYear: number) => {
+        const currentDate = new Date(year, selectedMonthIdx, selectedDay);
+        const newDate = new Date(targetYear, monthIdx, day);
+        if (newDate.getTime() === currentDate.getTime()) return;
+        if (newDate > currentDate) {
+            setDaySlideDir('right');
+        } else {
+            setDaySlideDir('left');
+        }
+        setSelectedDay(day);
+        if (monthIdx !== selectedMonthIdx) setSelectedMonthIdx(monthIdx);
+        // setYear(targetYear); // Se tiver suporte a múltiplos anos
+    };
     const handleMonthSelect = (monthIdx: number, coords: {x: number, y: number}) => {
         setZoomOrigin(coords);
         setDirection('in');
@@ -34,6 +96,7 @@ const App: React.FC = () => {
     };
 
     const handleDaySelect = (monthIdx: number, day: number, rect?: DOMRect) => {
+        setDaySlideDir(null)
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
         if (rect) {
@@ -67,20 +130,23 @@ const App: React.FC = () => {
         setNavLevel(previousNavLevel)
         setSelectedEvent(null)
     }
-
-    const handleFooterDateSelect = (day: number, monthIdx: number) => {
-        setSelectedDay(day);
-        if (monthIdx !== selectedMonthIdx) {
-            setSelectedMonthIdx(monthIdx);
-        }
-    }
-
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
     const showLegend = navLevel !== 'event_detail';
 
     return (
         <div className="flex flex-col h-screen bg-white text-black font-sans overflow-hidden">
+            {/* Botão de Tema */}
+            <div className="absolute top-3 right-3 z-[70]">
+                <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-black dark:text-white shadow-sm hover:opacity-80 transition-opacity"
+                    title="Alternar Tema"
+                >
+                    {theme === 'dark' ? '☀️' : '🌙'}
+                </button>
+            </div>
+
             <style>{`
             .scrollbar-hide::-webkit-scrollbar { display: none; }
             .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -123,7 +189,8 @@ const App: React.FC = () => {
                     {(navLevel === 'day_detail' || isExitingDay) && (
                         <div
                             className={`absolute inset-0 bg-white z-20 
-                        ${isExitingDay ? 'animate-slide-down-content' : 'animate-slide-up-content'}`}
+                            ${daySlideDir === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left'}
+                        `}
                         >
                             <DayView
                                 currentYear={year}
@@ -131,6 +198,8 @@ const App: React.FC = () => {
                                 selectedDay={selectedDay}
                                 onBack={handleBackToMonth}
                                 onEventClick={handleEventSelect}
+                                onChangeDate={handleChangeDate}
+                                slideDir={daySlideDir}
                             />
                         </div>
                     )}
@@ -152,7 +221,7 @@ const App: React.FC = () => {
                     currentYear={year}
                     currentMonthIdx={selectedMonthIdx}
                     selectedDay={selectedDay}
-                    onSelectDay={handleFooterDateSelect}
+                    onSelectDay={handleChangeDate}
                     className={`
                         ${showLegend ? 'bottom-12 border-b border-gray-100' : 'bottom-0'}
                         ${isExitingDay ? 'animate-slide-down-footer' : 'animate-slide-up-footer'}
