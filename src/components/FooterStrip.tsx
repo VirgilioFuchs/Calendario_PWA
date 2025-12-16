@@ -154,8 +154,8 @@ const FooterStrip: React.FC<FooterStripProps> = ({
         <div
             style={{ transform: `translateY(${offsetY}px)` }}
                 className={`
-                h-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
-                border-t border-gray-400 dark:border-gray-700
+                 h-20 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md
+                border-t border-gray-200 dark:border-zinc-800
                 fixed left-0 right-0 z-[60] flex items-center
                 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.35)]
                 transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1)
@@ -190,20 +190,24 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                                     <span
                                         className={`text-[9px] font-bold uppercase mb-1 transition-colors
                                         ${isSelected
-                                            ? 'text-black dark:text-white'
-                                            : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-200'
-                                        }`}
+                                            ? 'text-gray-900 dark:text-zinc-100'
+                                            : isWeekend
+                                                ? 'text-gray-400 dark:text-zinc-500'
+                                                : 'text-gray-600 group-hover:text-gray-900 dark:text-zinc-400 dark:group-hover:text-zinc-200'}
+                                        `}
                                     >
                                         {WEEK_DAYS_ABREVIATED[item.weekDay]}
                                     </span>
 
                                     <div className={`
-                                        w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm text-black dark:text-white
+                                         w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm
+                                        text-gray-800 dark:text-zinc-200
+                                        group-hover:bg-gray-100 dark:group-hover:bg-zinc-900/50
                                         ${isSelected
-                                        ? 'bg-black text-white scale-110 shadow-md dark:bg-white dark:text-black'
+                                        ? 'bg-black text-white scale-110 shadow-md dark:bg-zinc-100 dark:text-zinc-950'
                                         : isToday
-                                            ? 'bg-gray-200 text-black border border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600' // HOJE (Destaque Secundário, verificar como quer deixar depois)
-                                            : ` ${isWeekend ? 'text-gray-400 dark:text-gray-400' : ''}
+                                            ? 'bg-gray-200 text-gray-900 border border-gray-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700'
+                                            : `${isWeekend ? 'text-gray-400 dark:text-zinc-500' : ''}
                                             `}
                                     `}>
                                         {item.day}

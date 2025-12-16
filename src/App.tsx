@@ -26,7 +26,8 @@ const App: React.FC = () => {
     const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
     const [direction, setDirection] = useState<'in' | 'out'>('in');
     const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
-    const[isExitingDay, setIsExitingDay] = useState(false);
+    const [isExitingDay, setIsExitingDay] = useState(false);
+    const [dayRevealOrigin, setDayRevealOrigin] = useState<{ x: number; y: number } | null>(null);
 
     // Tema Inteligente
     const [theme, setTheme] = useState(() => {
@@ -101,6 +102,10 @@ const App: React.FC = () => {
         setSelectedDay(day);
         if (rect) {
             setWeekAnimOriginY(rect.top)
+            setDayRevealOrigin({
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            });
         }
         setNavLevel('day_detail');
     };
@@ -135,18 +140,7 @@ const App: React.FC = () => {
     const showLegend = navLevel !== 'event_detail';
 
     return (
-        <div className="flex flex-col h-screen bg-white text-black font-sans overflow-hidden">
-            {/* Botão de Tema */}
-            <div className="absolute top-3 right-3 z-[70]">
-                <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-black dark:text-white shadow-sm hover:opacity-80 transition-opacity"
-                    title="Alternar Tema"
-                >
-                    {theme === 'dark' ? '☀️' : '🌙'}
-                </button>
-            </div>
-
+        <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans overflow-hidden transition-colors duration-300">
             <style>{`
             .scrollbar-hide::-webkit-scrollbar { display: none; }
             .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -173,7 +167,7 @@ const App: React.FC = () => {
                     {navLevel === 'month_detail' && (
                         <div
                             key="month-detail"
-                            className="flex-1 h-full w-full absolute inset-0 bg-white"
+                            className="flex-1 h-full w-full absolute inset-0 bg-white dark:bg-zinc-950"
                         >
                             <MonthView
                                 year={year}
@@ -188,9 +182,17 @@ const App: React.FC = () => {
                     {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
                     {(navLevel === 'day_detail' || isExitingDay) && (
                         <div
-                            className={`absolute inset-0 bg-white z-20 
-                            ${daySlideDir === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left'}
-                        `}
+                            className={`absolute inset-0 bg-white dark:bg-zinc-950 z-20
+                                ${isExitingDay ? 'animate-day-reveal-out' : 'animate-day-reveal-in'}                            
+                            `}
+                            style={
+                            dayRevealOrigin
+                                ? ({
+                                    '--reveal-x': `${dayRevealOrigin.x}px`,
+                                    '--reveal-y': `${dayRevealOrigin.y}px`,
+                                } as React.CSSProperties)
+                                : undefined
+                        }
                         >
                             <DayView
                                 currentYear={year}
@@ -223,7 +225,7 @@ const App: React.FC = () => {
                     selectedDay={selectedDay}
                     onSelectDay={handleChangeDate}
                     className={`
-                        ${showLegend ? 'bottom-12 border-b border-gray-100' : 'bottom-0'}
+                        ${showLegend ? 'bottom-12 border-b border-gray-200 dark:border-zinc-800' : 'bottom-0'}
                         ${isExitingDay ? 'animate-slide-down-footer' : 'animate-slide-up-footer'}
                     `}
                     animStartY={weekAnimOriginY}
@@ -232,7 +234,9 @@ const App: React.FC = () => {
             )}
 
             {showLegend && (
-                <FooterConfig />
+                <FooterConfig
+                currentTheme={theme}
+                onToggleTheme={toggleTheme}/>
             )}
         </div>
     );

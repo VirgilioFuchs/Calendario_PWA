@@ -41,7 +41,8 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
         <div
             ref={containerRef}
             style={style}
-            className={`flex-1 overflow-y-auto pt-16 px-3 pb-5 scroll-smooth bg-gray-50 h-full origin-top-left ${animation}`}
+            className={`flex-1 overflow-y-auto pt-16 px-3 pb-5 scroll-smooth h-full origin-top-left ${animation}
+            bg-gray-50 dark:bg-zinc-950`}
         >
             <div className="grid grid-cols-2 gap-3">
                 {months.map((mIdx) => {
@@ -59,11 +60,13 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                             id={`month-card-${mIdx}`}
                             data-month-name={`${MONTH_NAMES[mIdx]} ${currentYear}`}
                             onClick={(e) => handleCardClick(e, mIdx)}
-                            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm active:scale-[0.98] transition-transform cursor-pointer hover:border-black/20 flex flex-col"
+                            className="rounded-xl p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col
+                            bg-white border border-gray-200 hover:border-black/20
+                            dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600"
                         >
                             {/* Título do Mês Centralizado */}
                             <div className="text-center mb-2">
-                                <span className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+                                <span className="text-xs font-bold uppercase tracking-wide text-gray-800 dark:text-gray-200">
                                     {MONTH_NAMES[mIdx]}
                                 </span>
                             </div>
@@ -74,7 +77,7 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                                 {/* Headers da Semana */}
                                 {WEEK_DAYS.map((d, i) => (
                                     <div key={d}
-                                         className={`text-center text-[8px] font-bold ${(i === 0 || i === 6) ? 'text-gray-300' : 'text-gray-400'}`}>
+                                         className={`text-center text-[8px] font-bold ${(i === 0 || i === 6) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-400 dark:text-zinc-500'}`}>
                                         {d.charAt(0)}
                                     </div>
                                 ))}
@@ -89,8 +92,8 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                                             key={d}
                                             className={`h-5 w-5 mx-auto rounded-full flex flex-col items-center justify-center text-[9px] relative
                                             ${isWeekend
-                                                ? 'text-gray-300 font-normal'
-                                                : 'text-gray-900 font-bold'}`}
+                                                ? 'text-gray-300 font-normal dark:text-zinc-600'
+                                                : 'text-gray-900 font-bold dark:text-zinc-300'}`}
                                         >
                                             {d} {/* Dias números dos meses */}
                                         </div>
