@@ -6,7 +6,7 @@ import FooterStrip from './components/FooterStrip';
 import MonthView from './components/MonthView.tsx';
 import FooterConfig from "./components/FooterConfig.tsx";
 import EventDetailView from "./components/EventDetailView.tsx";
-import type { CalendarEvent } from "./types";
+import type {CalendarEvent} from "./types";
 
 import './App.css';
 
@@ -23,11 +23,11 @@ const App: React.FC = () => {
 
     // Animações
     const [daySlideDir, setDaySlideDir] = useState<'right' | 'left' | null>(null);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 0, y: 0 });
+    const [zoomOrigin, setZoomOrigin] = useState({x: 0, y: 0});
     const [direction, setDirection] = useState<'in' | 'out'>('in');
     const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
     const [isExitingDay, setIsExitingDay] = useState(false);
-    const [dayRevealOrigin, setDayRevealOrigin] = useState<{ x: number; y: number } | null>(null);
+    const [isExitingEvent, setIsExitingEvent] = useState(false);
 
     // Tema Inteligente
     const [theme, setTheme] = useState(() => {
@@ -87,9 +87,8 @@ const App: React.FC = () => {
         }
         setSelectedDay(day);
         if (monthIdx !== selectedMonthIdx) setSelectedMonthIdx(monthIdx);
-        // setYear(targetYear); // Se tiver suporte a múltiplos anos
     };
-    const handleMonthSelect = (monthIdx: number, coords: {x: number, y: number}) => {
+    const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
         setZoomOrigin(coords);
         setDirection('in');
         setSelectedMonthIdx(monthIdx);
@@ -102,28 +101,21 @@ const App: React.FC = () => {
         setSelectedDay(day);
         if (rect) {
             setWeekAnimOriginY(rect.top)
-            setDayRevealOrigin({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
-            });
         }
-        setNavLevel('day_detail');
-    };
 
-    const handleEventSelect = (event: CalendarEvent) => {
-        setSelectedEvent(event);
-        if (navLevel === 'month_detail' || navLevel === 'day_detail') {
-            setPreviousNavLevel(navLevel)
-        }
-        setNavLevel('event_detail');
-    }
+        setPreviousNavLevel('month_detail');
+
+        requestAnimationFrame(() => {
+            setNavLevel('day_detail');
+        });
+    };
 
     const handleBackToMonth = () => {
         setIsExitingDay(true)
         setTimeout(() => {
             setNavLevel('month_detail');
             setIsExitingDay(false);
-        }, 380);
+        }, 350);
     };
 
     const handleBackToYear = () => {
@@ -131,83 +123,101 @@ const App: React.FC = () => {
         setNavLevel('year_list');
     }
 
-    const handleBackFromEvent = () => {
-        setNavLevel(previousNavLevel)
-        setSelectedEvent(null)
+    const handleEventSelect = (event: CalendarEvent) => {
+        setSelectedEvent(event);
+
+        if (navLevel === 'month_detail') {
+            setPreviousNavLevel('month_detail');
+        } else if (navLevel === 'day_detail') {
+            setPreviousNavLevel('day_detail');
+        }
+
+        setIsExitingEvent(false);
+        setNavLevel('event_detail');
     }
+
+    const handleBackFromEvent = () => {
+        setIsExitingEvent(true);
+        setTimeout(() => {
+            setNavLevel(previousNavLevel);
+            setSelectedEvent(null);
+            setIsExitingEvent(false);
+        }, 400);
+    }
+
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
     const showLegend = navLevel !== 'event_detail';
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans overflow-hidden transition-colors duration-300">
+        <div
+            className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans overflow-hidden transition-colors duration-300">
             <style>{`
             .scrollbar-hide::-webkit-scrollbar { display: none; }
             .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
 
-            {navLevel === 'year_list' && <Header currentYear={year} />}
+            {navLevel === 'year_list' && <Header currentYear={year}/>}
 
             <main className="flex-1 relative flex flex-col overflow-hidden">
 
-                    {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
-                    {navLevel === 'year_list' && (
-                            <YearView
-                                currentYear={year}
-                                initialMonthIdx={selectedMonthIdx}
-                                onMonthClick={handleMonthSelect}
-                                animation={direction === 'out' ? 'animate-zoom-out' : ''}
-                                style={{
-                                    transformOrigin: direction === 'out' ? `${zoomOrigin.x}px ${zoomOrigin.y}px`: 'center'
-                                }}
-                            />
-                    )}
+                {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
+                {navLevel === 'year_list' && (
+                    <YearView
+                        currentYear={year}
+                        initialMonthIdx={selectedMonthIdx}
+                        onMonthClick={handleMonthSelect}
+                        animation={direction === 'out' ? 'animate-zoom-out' : ''}
+                        style={{
+                            transformOrigin: direction === 'out' ? `${zoomOrigin.x}px ${zoomOrigin.y}px` : 'center'
+                        }}
+                    />
+                )}
 
-                    {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
-                    {navLevel === 'month_detail' && (
-                        <div
-                            key="month-detail"
-                            className="flex-1 h-full w-full absolute inset-0 bg-white dark:bg-zinc-950"
-                        >
-                            <MonthView
-                                year={year}
-                                monthIdx={selectedMonthIdx}
-                                onBack={handleBackToYear}
-                                onDayClick={handleDaySelect}
-                                zoomOrigin={zoomOrigin}
-                            />
-                        </div>
-                    )}
+                {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
+                {navLevel === 'month_detail' && (
+                    <div
+                        key="month-detail"
+                        className="flex-1 h-full w-full absolute inset-0 bg-white dark:bg-zinc-950"
+                    >
+                        <MonthView
+                            year={year}
+                            monthIdx={selectedMonthIdx}
+                            onBack={handleBackToYear}
+                            onDayClick={handleDaySelect}
+                            zoomOrigin={zoomOrigin}
+                        />
+                    </div>
+                )}
 
-                    {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
-                    {(navLevel === 'day_detail' || isExitingDay) && (
-                        <div
-                            className={`absolute inset-0 bg-white dark:bg-zinc-950 z-20
-                                ${isExitingDay ? 'animate-day-reveal-out' : 'animate-day-reveal-in'}                            
-                            `}
-                            style={
-                            dayRevealOrigin
-                                ? ({
-                                    '--reveal-x': `${dayRevealOrigin.x}px`,
-                                    '--reveal-y': `${dayRevealOrigin.y}px`,
-                                } as React.CSSProperties)
-                                : undefined
-                        }
-                        >
-                            <DayView
-                                currentYear={year}
-                                currentMonthIdx={selectedMonthIdx}
-                                selectedDay={selectedDay}
-                                onBack={handleBackToMonth}
-                                onEventClick={handleEventSelect}
-                                onChangeDate={handleChangeDate}
-                                slideDir={daySlideDir}
-                            />
-                        </div>
-                    )}
+                {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
+                {(navLevel === 'day_detail' || isExitingDay || navLevel === 'event_detail') && (
+                    <div
+                        key="day-view-wrapper"
+                        className={`
+                             absolute inset-0 bg-white dark:bg-zinc-950 z-20
+                             ${isExitingDay ? 'animate-day-slide-down' : ''}
+                             ${navLevel === 'day_detail' && previousNavLevel === 'month_detail' && !isExitingEvent ? 'animate-day-slide-up' : ''}
+                        `}
+                    >
+                        <DayView
+                            currentYear={year}
+                            currentMonthIdx={selectedMonthIdx}
+                            selectedDay={selectedDay}
+                            onBack={handleBackToMonth}
+                            onEventClick={handleEventSelect}
+                            onChangeDate={handleChangeDate}
+                            slideDir={daySlideDir}
+                        />
+                    </div>
+                )}
 
 
-                    {navLevel === 'event_detail' && selectedEvent && (
+                {navLevel === 'event_detail' && selectedEvent && (
+                    <div className={`absolute inset-0 z-30 bg-white dark:bg-zinc-950 shadow-2xl
+                            ${isExitingEvent ? 'animate-slide-out-right-cover' : 'animate-slide-in-right-cover'}
+                        `}
+                    >
                         <EventDetailView
                             event={selectedEvent}
                             currentYear={year}
@@ -215,7 +225,8 @@ const App: React.FC = () => {
                             previousView={previousNavLevel}
                             onBack={handleBackFromEvent}
                         />
-                    )}
+                    </div>
+                )}
             </main>
 
             {(showFooter || isExitingDay) && (
@@ -235,8 +246,8 @@ const App: React.FC = () => {
 
             {showLegend && (
                 <FooterConfig
-                currentTheme={theme}
-                onToggleTheme={toggleTheme}/>
+                    currentTheme={theme}
+                    onToggleTheme={toggleTheme}/>
             )}
         </div>
     );

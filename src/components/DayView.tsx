@@ -1,6 +1,6 @@
-import React, { useMemo, useRef } from 'react';
-import { WEEK_DAYS, MONTH_NAMES, generateMockEvents, type CalendarEvent } from '../types';
-import { useDragScroll } from '../hooks/useDragScroll';
+import React, {useMemo, useRef} from 'react';
+import {WEEK_DAYS, MONTH_NAMES, generateMockEvents, type CalendarEvent} from '../types';
+import {useDragScroll} from '../hooks/useDragScroll';
 import '../App.css';
 
 interface DayViewProps {
@@ -8,18 +8,26 @@ interface DayViewProps {
     currentMonthIdx: number;
     selectedDay: number;
     onBack: () => void;
-    onChangeDate: (day: number, monthIdx:number, year:number) => void;
-    onEventClick: (event:CalendarEvent) => void;
+    onChangeDate: (day: number, monthIdx: number, year: number) => void;
+    onEventClick: (event: CalendarEvent) => void;
     slideDir: 'right' | 'left' | null;
 }
 
 //Campo de vizualização de dias
-const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selectedDay, onBack, onEventClick, onChangeDate, slideDir }) => {
+const DayView: React.FC<DayViewProps> = ({
+                                             currentYear,
+                                             currentMonthIdx,
+                                             selectedDay,
+                                             onBack,
+                                             onEventClick,
+                                             onChangeDate,
+                                             slideDir
+                                         }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
-    const hours = useMemo(() => Array.from({ length: 17 }, (_, i) => i + 7 ), []);
+    const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
     const events = useMemo(() => generateMockEvents(selectedDay), [selectedDay]);
     const headerDate = new Date(currentYear, currentMonthIdx, selectedDay);
-    const dayTitle =`${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
+    const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
 
     const touchStartX = useRef<number | null>(null)
     const minSwipeDistance = 50;
@@ -28,7 +36,7 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
     };
 
     const onTouchEnd = (e: React.TouchEvent) => {
-        if(!touchStartX.current) return;
+        if (!touchStartX.current) return;
 
         const touchEndX = e.changedTouches[0].clientX;
         const distance = touchStartX.current - touchEndX;
@@ -46,11 +54,16 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
 
     const getEventStyle = (type: string) => {
         switch (type) {
-            case 'Trabalho': return 'bg-gray-100 text-gray-700 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500';
-            case 'Férias':   return 'bg-green-100 text-green-800 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500';
-            case 'Feriado':  return 'bg-red-100 text-red-800 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500';
-            case 'Festa':    return 'bg-purple-100 text-purple-800 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500';
-            default:         return 'bg-blue-50 text-blue-800 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500';
+            case 'Trabalho':
+                return 'bg-gray-100 text-gray-700 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500';
+            case 'Férias':
+                return 'bg-green-100 text-green-800 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500';
+            case 'Feriado':
+                return 'bg-red-100 text-red-800 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500';
+            case 'Festa':
+                return 'bg-purple-100 text-purple-800 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500';
+            default:
+                return 'bg-blue-50 text-blue-800 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500';
         }
     };
 
@@ -58,14 +71,14 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
         slideDir === 'right'
             ? 'animate-day-swipe-from-right'
             : slideDir === 'left'
-            ? 'animate-day-swipe-from-left'
-            : '';
+                ? 'animate-day-swipe-from-left'
+                : '';
 
     return (
         <div
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
-            className="flex-1 flex flex-col overflow-hidden animate-fade-in bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50"
+            className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50"
         >
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 sticky top-0 z-20 backdrop-blur-sm
                 bg-white/90 border-gray-200 hover:bg-gray-50
@@ -77,7 +90,8 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
                 >
                     {/* Botão voltar */}
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                              strokeLinejoin="round"/>
                     </svg>
                     {/* Mês ao lado do voltar (Mês Atual) */}
                     <span className="text-base font-semibold leading-none pb-0.5">
@@ -89,76 +103,81 @@ const DayView: React.FC<DayViewProps> = ({ currentYear, currentMonthIdx, selecte
                 <button
                     className='p-2 -mr-2 dark:text-white text-black'
                 >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                         strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                 </button>
             </div>
 
-            {/* TÍTULO DO DIA */}
-            <div className="p-3 px-4 text-lg font-semibold border-b text-gray-900 bg-gray-50 border-gray-200
-                dark:text-zinc-100 dark:bg-zinc-900/60 dark:border-zinc-800
-                z-10 sticky top-[45px] shadow-sm flex justify-center items-center">
-                <span>{dayTitle}</span>
-            </div>
-
-            {/* TIMELINE DOS EVENTOS */}
             <div
-                key={selectedDay}
-                ref={containerRef}
-                className={`flex-1 overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500 ${daySwipeAnim}`}
+                key={`${currentMonthIdx}-${selectedDay}`}
+                className={`flex-1 flex flex-col relative overflow-hidden ${daySwipeAnim}`}
             >
-                <div className="grid grid-cols-[50px_1fr] auto-rows-[60px] pb-20">
-                    {hours.map((hour) => (
-                        <React.Fragment key={hour}>
-                            <div className="sticky left-0 bg-gray-50 text-gray-500 border-gray-200 border-r border-b text-[11px] text-center pt-1.5 z-10
+                {/* TÍTULO DO DIA */}
+                <div className="p-3 px-4 text-lg font-semibold border-b text-gray-900 bg-gray-50 border-gray-200
+                dark:text-zinc-100 dark:bg-zinc-900/60 dark:border-zinc-800
+                z-10 shadow-sm flex justify-center items-center shrink-0">
+                    <span>{dayTitle}</span>
+                </div>
+
+                {/* TIMELINE DOS EVENTOS */}
+                <div
+                    ref={containerRef}
+                    className={`flex-1 overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500`}
+                >
+                    <div className="grid grid-cols-[50px_1fr] auto-rows-[60px] pb-20">
+                        {hours.map((hour) => (
+                            <React.Fragment key={hour}>
+                                <div className="sticky left-0 bg-gray-50 text-gray-500 border-gray-200 border-r border-b text-[11px] text-center pt-1.5 z-10
                                 dark:bg-zinc-900/60 dark:text-zinc-400 dark:border-zinc-800">
-                                {hour.toString().padStart(2, '0')}:00
-                            </div>
+                                    {hour.toString().padStart(2, '0')}:00
+                                </div>
 
-                            <div className="border-b relative border-gray-200 dark:border-zinc-800">
-                                {events.filter(e => Math.floor(e.startHour) === hour).map(evt => {
+                                <div className="border-b relative border-gray-200 dark:border-zinc-800">
+                                    {events.filter(e => Math.floor(e.startHour) === hour).map(evt => {
 
-                                    // LÓGICA DE RESPONSIVIDADE DO TAMANHO DO EVENTO
-                                    const isShortEvent = evt.duration <= 1;
-                                    const isTinyEvent = evt.duration <= 0.5;
+                                        // LÓGICA DE RESPONSIVIDADE DO TAMANHO DO EVENTO
+                                        const isShortEvent = evt.duration <= 1;
+                                        const isTinyEvent = evt.duration <= 0.5;
 
-                                    return (
-                                        <div
-                                            key={evt.id}
-                                            onClick={() => onEventClick(evt)}
-                                            className={`absolute left-1 right-1 rounded-md border-l-4 shadow-sm overflow-hidden cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all flex flex-col justify-center
+                                        return (
+                                            <div
+                                                key={evt.id}
+                                                onClick={() => onEventClick(evt)}
+                                                className={`absolute left-1 right-1 rounded-md border-l-4 shadow-sm overflow-hidden cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all flex flex-col justify-center
                                                 ${isShortEvent ? 'p-1 gap-0.5' : 'p-2 gap-1'} 
                                                 ${getEventStyle(evt.type)}`}
-                                            style={{
-                                                top: `${(evt.startHour % 1) * 100}%`,
-                                                height: `${evt.duration * 100}%`,
-                                                zIndex: 5
-                                            }}
-                                        >
-                                            <div className={`font-semibold leading-tight truncate
+                                                style={{
+                                                    top: `${(evt.startHour % 1) * 100}%`,
+                                                    height: `${evt.duration * 100}%`,
+                                                    zIndex: 5
+                                                }}
+                                            >
+                                                <div className={`font-semibold leading-tight truncate
                                                  ${isShortEvent ? 'text-[10px]' : 'text-xs'}
                                                 `}>
-                                                {evt.title}
-                                            </div>
+                                                    {evt.title}
+                                                </div>
 
-                                            {!isTinyEvent && (
-                                                <div className={`flex items-center opacity-70 uppercase
+                                                {!isTinyEvent && (
+                                                    <div className={`flex items-center opacity-70 uppercase
                                                     ${isShortEvent ? 'text-[9px] justify-between' : 'text-[10px] gap-2 justify-between'}
                                                     `}>
-                                                    <span>{evt.type}</span>
-                                                    <span>
-                                                        {Math.floor(evt.startHour)}:{(evt.startHour % 1 * 60).toString().padStart(2,'0')}
+                                                        <span>{evt.type}</span>
+                                                        <span>
+                                                        {Math.floor(evt.startHour)}:{(evt.startHour % 1 * 60).toString().padStart(2, '0')}
                                                     </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </React.Fragment>
-                    ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </React.Fragment>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

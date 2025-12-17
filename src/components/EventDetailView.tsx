@@ -61,7 +61,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
     const isShortEvent = event.duration <= 1;
 
     return (
-        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 h-full animate-fade-in z-50 overflow-y-auto">
+        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 h-full z-50 overflow-y-auto">
             <div className="sticky top-0 backdrop-blur-sm px-4 py-3 z-30 flex items-center
                 bg-white/95 border-b border-gray-100
                 dark:bg-zinc-950/95 dark:border-zinc-800">

@@ -1,83 +1,82 @@
 :root {
     --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
-    --reveal-x: 50%;
-    --reveal-y: 50%;
 }
 
-/* Month -> Day: reveal a partir do ponto clicado */
-@keyframes dayRevealIn {
+@keyframes daySlideUp {
     from {
         opacity: 0;
-        transform: translateY(14px) scale(0.985);
-        clip-path: circle(24px at var(--reveal-x, 50%) var(--reveal-y, 50%));
+        transform: translateY(75px);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
-        clip-path: circle(140% at var(--reveal-x, 50%) var(--reveal-y, 50%));
+        transform: translateY(0);
     }
 }
 
-@keyframes dayRevealOut {
+@keyframes daySlideDown {
     from {
         opacity: 1;
-        transform: translateY(0) scale(1);
-        clip-path: circle(140% at var(--reveal-x, 50%) var(--reveal-y, 50%));
+        transform: translateY(0);
     }
     to {
         opacity: 0;
-        transform: translateY(10px) scale(0.985);
-        clip-path: circle(24px at var(--reveal-x, 50%) var(--reveal-y, 50%));
+        transform: translateY(40px);
     }
 }
 
-.animate-day-reveal-in {
-    animation: dayRevealIn 420ms var(--ease-smooth) both;
+.animate-day-slide-up {
+    animation: daySlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-.animate-day-reveal-out {
-    /* casa com seu setTimeout de 380ms no back do dia */
-    animation: dayRevealOut 380ms var(--ease-smooth) both;
-}
-
-/* Fallback se clip-path não for suportado */
-@supports not (clip-path: circle(10px at 50% 50%)) {
-    @keyframes dayRevealInFallback {
-        from { opacity: 0; transform: translateY(18px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes dayRevealOutFallback {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(18px); }
-    }
-
-    .animate-day-reveal-in { animation: dayRevealInFallback 420ms var(--ease-smooth) both; }
-    .animate-day-reveal-out { animation: dayRevealOutFallback 380ms var(--ease-smooth) both; }
+.animate-day-slide-down {
+    animation: daySlideDown 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 /* Troca de dia dentro do DayView */
 @keyframes daySwipeFromRight {
-    from { opacity: 0; transform: translateX(18px); }
+    from { opacity: 0; transform: translateX(90px); }
     to { opacity: 1; transform: translateX(0); }
 }
 @keyframes daySwipeFromLeft {
-    from { opacity: 0; transform: translateX(-18px); }
+    from { opacity: 0; transform: translateX(-90px); }
     to { opacity: 1; transform: translateX(0); }
 }
 
 .animate-day-swipe-from-right {
-    animation: daySwipeFromRight 220ms ease-out both;
+    animation: daySwipeFromRight 0.35s ease-out both;
 }
 .animate-day-swipe-from-left {
-    animation: daySwipeFromLeft 220ms ease-out both;
+    animation: daySwipeFromLeft 0.35s ease-out both;
 }
 
-/* Acessibilidade: reduz motion */
-@media (prefers-reduced-motion: reduce) {
-    .animate-day-reveal-in,
-    .animate-day-reveal-out,
-    .animate-day-swipe-from-right,
-    .animate-day-swipe-from-left {
-        animation: none !important;
+@keyframes slideInRightCover {
+    from {
+        transform: translateX(100%);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.1);
     }
+    to {
+        transform: translateX(0);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.2);
+    }
+}
+
+@keyframes slideOutRightCover {
+    from {
+        transform: translateX(0);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.2);
+    }
+    to {
+        transform: translateX(100%);
+        box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+    }
+}
+
+.animate-slide-in-right-cover {
+    animation: slideInRightCover 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    will-change: transform;
+}
+
+.animate-slide-out-right-cover {
+    animation: slideOutRightCover 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    will-change: transform;
 }
