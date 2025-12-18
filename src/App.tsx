@@ -115,7 +115,7 @@ const App: React.FC = () => {
         setTimeout(() => {
             setNavLevel('month_detail');
             setIsExitingDay(false);
-        }, 350);
+        }, 320);
     };
 
     const handleBackToYear = () => {
@@ -142,7 +142,7 @@ const App: React.FC = () => {
             setNavLevel(previousNavLevel);
             setSelectedEvent(null);
             setIsExitingEvent(false);
-        }, 400);
+        }, 380);
     }
 
     // Lógica de Exibição

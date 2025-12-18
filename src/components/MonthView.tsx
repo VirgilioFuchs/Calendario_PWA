@@ -138,7 +138,8 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             {/* ÁREA DE ROLAGEM DOS MESES */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden cursor-grab active:cursor-grabbing select-none scroll-smooth animate-zoom-in origin-top-left
+                className="flex-1 overflow-y-auto overflow-x-hidden cursor-grab active:cursor-grabbing select-none
+                scroll-smooth animate-zoom-in origin-top-left gpu-accelerated
                 bg-white dark:bg-zinc-950"
                 style={{
                     transformOrigin: zoomOrigin ? `${zoomOrigin.x}px ${Math.max(0, zoomOrigin.y - headerOffset)}px` : 'center'
@@ -180,7 +181,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                         <div
                                             key={d}
                                             onClick={(e) => handleDayClick(e, mIdx, d)}
-                                            className={`min-h-[110px] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.99]
+                                            className={`min-h-[125px] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                             border-gray-100 dark:border-zinc-800
                                             hover:bg-gray-50 dark:hover:bg-zinc-900
                                             ${isWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
@@ -206,7 +207,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                 </span>
                                             </div>
 
-                                            <div className="mt-auto w-full px-0.5 pb-0.5 flex flex-col gap-[1px]">
+                                            <div className="mt-auto w-full px-0.5 pb-3.5 flex flex-col gap-[1px]">
 
                                                 {/* Lista de Eventos */}
                                                 <div className="flex flex-col gap-[2px] w-full">
@@ -227,7 +228,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                 {/* Contador */}
                                                 {remainingEvents > 0 && (
                                                     <div className="w-full text-center">
-                                                        <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400">
+                                                        <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400 ">
                                                             +{remainingEvents}
                                                         </span>
                                                     </div>

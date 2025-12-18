@@ -63,6 +63,10 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                             className="rounded-xl p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col
                             bg-white border border-gray-200 hover:border-black/20
                             dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600"
+                            style={{
+                                opacity: 0,
+                                animationFillMode: 'forwards'
+                            }}
                         >
                             {/* Título do Mês Centralizado */}
                             <div className="text-center mb-2">
