@@ -4,7 +4,54 @@
     --ease-out:  cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== DAY VIEW ===== */
+@keyframes monthZoomIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+        border-radius: 24px;
+        filter: blur(8px);
+    }
+    60% {
+        opacity: 1;
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        border-radius: 0;
+        filter: blur(0);
+    }
+}
+
+@keyframes monthZoomOut {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        border-radius: 0;
+        filter: blur(0);
+    }
+    40% {
+        opacity: 1;
+        filter:  blur(2px);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.3);
+        border-radius: 24px;
+        filter: blur(8px);
+    }
+}
+
+.animate-month-zoom-in {
+    animation: monthZoomIn 0.55s var(--ease-out-expo) forwards;
+    will-change: transform, opacity, border-radius, filter;
+}
+
+.animate-month-zoom-out {
+    animation: monthZoomOut 0.45s var(--ease-out) forwards;
+    will-change: transform, opacity, border-radius, filter;
+}
+
 @keyframes daySlideUp {
     0% {
         opacity: 0;
@@ -41,40 +88,37 @@
     will-change: transform, opacity, filter;
 }
 
-/* ===== DAY SWIPE ===== */
+
 @keyframes daySwipeFromRight {
     0% {
-        opacity: 0;
-        transform:  translateX(100px) scale(0.94);
+        transform: translateX(100%);
+        opacity: 0.5;
     }
     100% {
-        opacity:  1;
-        transform: translateX(0) scale(1);
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 
 @keyframes daySwipeFromLeft {
     0% {
-        opacity: 0;
-        transform: translateX(-100px) scale(0.94);
+        transform: translateX(-100%);
+        opacity: 0.5;
     }
     100% {
+        transform:  translateX(0);
         opacity: 1;
-        transform:  translateX(0) scale(1);
     }
 }
 
 .animate-day-swipe-from-right {
-    animation: daySwipeFromRight 0.45s var(--ease-out-expo) both;
-    will-change: transform, opacity;
+    animation: daySwipeFromRight 0.3s var(--ease-out-expo) both;
 }
 
 .animate-day-swipe-from-left {
-    animation: daySwipeFromLeft 0.45s var(--ease-out-expo) both;
-    will-change:  transform, opacity;
+    animation:  daySwipeFromLeft 0.3s var(--ease-out-expo) both;
 }
 
-/* ===== EVENT DETAIL COVER ===== */
 @keyframes slideInRightCover {
     0% {
         transform: translateX(100%);
@@ -125,7 +169,6 @@
 .stagger-11 { animation-delay: 330ms; }
 .stagger-12 { animation-delay: 360ms; }
 
-/* ===== CARD HOVER ===== */
 .card-hover {
     transition: transform 0.3s var(--ease-out-expo),
     box-shadow 0.3s var(--ease-out-expo),
@@ -142,7 +185,6 @@
     transition-duration: 0.15s;
 }
 
-/* ===== GPU ACCELERATION ===== */
 .gpu-accelerated {
     will-change: transform, opacity;
     backface-visibility: hidden;

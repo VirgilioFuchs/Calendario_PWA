@@ -101,15 +101,20 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ event, currentYear, c
                 {/* TIMELINE */}
                 <div className="mb-10 relative">
                     <h3 className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-6">Timeline</h3>
-                    <div className="relative">
+                    <div className="relative pt-3">
 
                         {timeSlots.map(hour => (
                             <div
                                 key={hour}
-                                className="relative border-b border-gray-100 dark:border-zinc-800"
+                                className="relative"
                                 style={{ height: `${HOUR_HEIGHT}px` }}
                             >
-                                <span className="text-sm font-medium text-gray-400 dark:text-zinc-500 absolute -top-2.5 left-0 bg-white dark:bg-zinc-950 pl-2">
+                                <div
+                                    className="absolute top-0 right-0 border-t border-gray-100 dark:border-zinc-800"
+                                    style={{ left: '52px' }}
+                                />
+
+                                <span className="text-sm font-medium text-gray-400 dark:text-zinc-500 absolute -top-2.5 left-0 bg-white dark:bg-zinc-950 pr-4">
                                     {hour.toString().padStart(2, '0')}:00
                                 </span>
                             </div>

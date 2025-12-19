@@ -139,7 +139,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             <div
                 ref={containerRef}
                 className="flex-1 overflow-y-auto overflow-x-hidden cursor-grab active:cursor-grabbing select-none
-                scroll-smooth animate-zoom-in origin-top-left gpu-accelerated
+                scroll-smooth gpu-accelerated
                 bg-white dark:bg-zinc-950"
                 style={{
                     transformOrigin: zoomOrigin ? `${zoomOrigin.x}px ${Math.max(0, zoomOrigin.y - headerOffset)}px` : 'center'

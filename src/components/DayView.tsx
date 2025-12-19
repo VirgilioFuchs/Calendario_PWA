@@ -13,6 +13,8 @@ interface DayViewProps {
     slideDir: 'right' | 'left' | null;
 }
 
+const HOUR_HEIGHT = 60;
+
 //Campo de vizualização de dias
 const DayView: React.FC<DayViewProps> = ({
                                              currentYear,
@@ -65,6 +67,12 @@ const DayView: React.FC<DayViewProps> = ({
             default:
                 return 'bg-blue-50 text-blue-800 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500';
         }
+    };
+
+    const formatTime = (decimalTime: number) => {
+        const h = Math.floor(decimalTime);
+        const m = Math.round((decimalTime - h) * 60);
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     };
 
     const daySwipeAnim =
@@ -125,58 +133,93 @@ const DayView: React.FC<DayViewProps> = ({
                 {/* TIMELINE DOS EVENTOS */}
                 <div
                     ref={containerRef}
-                    className={`flex-1 overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500`}
+                    className={`flex-1 overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500 px-4`}
                 >
-                    <div className="grid grid-cols-[50px_1fr] auto-rows-[60px] pb-20">
+                    <div className="relative pt-6 pb-14">
+                        {/* Linhas de hora */}
                         {hours.map((hour) => (
-                            <React.Fragment key={hour}>
-                                <div className="sticky left-0 bg-gray-50 text-gray-500 border-gray-200 border-r border-b text-[11px] text-center pt-1.5 z-10
-                                dark:bg-zinc-900/60 dark:text-zinc-400 dark:border-zinc-800">
-                                    {hour.toString().padStart(2, '0')}:00
-                                </div>
+                            <div
+                                key={hour}
+                                className="relative"
+                                style={{ height: `${HOUR_HEIGHT}px` }}
+                            >
+                                <div
+                                    className="absolute top-0 right-0 border-t border-gray-100 dark:border-zinc-800"
+                                    style={{ left: '52px' }}
+                                />
+                                <span
+                                    className="absolute left-0 text-xs font-medium text-gray-400 dark:text-zinc-500 bg-white dark:bg-zinc-950 pr-3"
+                                    style={{ top: '-8px' }}
+                                >
+                                    {hour. toString().padStart(2, '0')}:00
+                                </span>
+                            </div>
+                        ))}
 
-                                <div className="border-b relative border-gray-200 dark:border-zinc-800">
-                                    {events.filter(e => Math.floor(e.startHour) === hour).map(evt => {
+                        {/* EVENTOS */}
+                        {events.map(evt => {
+                            const startHourIndex = evt.startHour - hours[0];
+                            const topPosition = startHourIndex * HOUR_HEIGHT + (evt.startHour % 1) * HOUR_HEIGHT;
+                            const eventHeight = evt.duration * HOUR_HEIGHT;
 
-                                        // LÓGICA DE RESPONSIVIDADE DO TAMANHO DO EVENTO
-                                        const isShortEvent = evt.duration <= 1;
-                                        const isTinyEvent = evt.duration <= 0.5;
+                            const isShortEvent = evt. duration <= 1;
+                            const isTinyEvent = evt.duration <= 0.5;
 
-                                        return (
-                                            <div
-                                                key={evt.id}
-                                                onClick={() => onEventClick(evt)}
-                                                className={`absolute left-1 right-1 rounded-md border-l-4 shadow-sm overflow-hidden cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all flex flex-col justify-center
-                                                ${isShortEvent ? 'p-1 gap-0.5' : 'p-2 gap-1'} 
-                                                ${getEventStyle(evt.type)}`}
-                                                style={{
-                                                    top: `${(evt.startHour % 1) * 100}%`,
-                                                    height: `${evt.duration * 100}%`,
-                                                    zIndex: 5
-                                                }}
-                                            >
-                                                <div className={`font-semibold leading-tight truncate
-                                                 ${isShortEvent ? 'text-[10px]' : 'text-xs'}
-                                                `}>
-                                                    {evt.title}
-                                                </div>
+                            const startTime = formatTime(evt.startHour);
+                            const endTime = formatTime(evt.startHour + evt. duration);
 
-                                                {!isTinyEvent && (
-                                                    <div className={`flex items-center opacity-70 uppercase
-                                                    ${isShortEvent ? 'text-[9px] justify-between' : 'text-[10px] gap-2 justify-between'}
-                                                    `}>
-                                                        <span>{evt.type}</span>
-                                                        <span>
-                                                        {Math.floor(evt.startHour)}:{(evt.startHour % 1 * 60).toString().padStart(2, '0')}
+                            return (
+                                <div
+                                    key={evt. id}
+                                    onClick={() => onEventClick(evt)}
+                                    className={`absolute left-14 right-0 rounded-xl border-l-4 shadow-sm overflow-hidden cursor-pointer 
+                                        hover:brightness-95 active:scale-[0.98] transition-transform z-10
+                                        ${getEventStyle(evt. type)}
+                                        ${isShortEvent
+                                        ?  'flex flex-row items-center justify-between p-2 px-3'
+                                        :  'flex flex-col justify-center p-3'}
+                                    `}
+                                    style={{
+                                        top: `${topPosition}px`,
+                                        height: `${Math.max(eventHeight, 40)}px`,
+                                    }}
+                                >
+                                    {isShortEvent ? (
+                                        <>
+                                            <div className="flex flex-col min-w-0 pr-2">
+                                                <span className="font-bold text-sm leading-tight truncate">
+                                                    {evt. title}
+                                                </span>
+                                                {! isTinyEvent && (
+                                                    <span className="text-[10px] font-bold opacity-60 uppercase leading-none mt-0.5">
+                                                        {evt.type}
                                                     </span>
-                                                    </div>
                                                 )}
                                             </div>
-                                        );
-                                    })}
+                                            <div className="text-xs opacity-90 whitespace-nowrap font-medium shrink-0">
+                                                {startTime}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-[10px] font-bold opacity-70 uppercase leading-none mb-1">
+                                                {evt.type}
+                                            </span>
+                                            <span className="font-bold text-base leading-tight truncate">
+                                                {evt.title}
+                                            </span>
+                                            <div className="mt-1.5 text-xs opacity-80 flex items-center gap-1">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                {startTime} - {endTime}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                            </React.Fragment>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>

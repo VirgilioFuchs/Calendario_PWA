@@ -7,12 +7,11 @@ interface YearViewProps {
     currentYear: number;
     initialMonthIdx: number;
     onMonthClick: (monthIdx: number, coords: { x: number, y: number }) => void;
-    animation?: string;
-    style?: React.CSSProperties;
+    isFirstLoad: boolean
 }
 
 // Vizualização mensal
-const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMonthClick, animation = '', style}) => {
+const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMonthClick, isFirstLoad}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
     const months = Array.from({length: 12}, (_, i) => i);
 
@@ -40,8 +39,7 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
     return (
         <div
             ref={containerRef}
-            style={style}
-            className={`flex-1 overflow-y-auto pt-16 px-3 pb-5 scroll-smooth h-full origin-top-left ${animation}
+            className={`flex-1 overflow-y-auto pt-16 px-3 pb-5 scroll-smooth h-full origin-top-left gpu-accelerated
             bg-gray-50 dark:bg-zinc-950`}
         >
             <div className="grid grid-cols-2 gap-3">
@@ -60,13 +58,14 @@ const YearView: React.FC<YearViewProps> = ({currentYear, initialMonthIdx, onMont
                             id={`month-card-${mIdx}`}
                             data-month-name={`${MONTH_NAMES[mIdx]} ${currentYear}`}
                             onClick={(e) => handleCardClick(e, mIdx)}
-                            className="rounded-xl p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col
-                            bg-white border border-gray-200 hover:border-black/20
-                            dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600"
-                            style={{
+                            className={`rounded-xl p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col
+                            ${isFirstLoad ? `animate-fade-in-scale stagger-${mIdx + 1}` : '' }
+                                bg-white border border-gray-200 hover:border-black/20
+                                dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600`}
+                            style={isFirstLoad ? {
                                 opacity: 0,
                                 animationFillMode: 'forwards'
-                            }}
+                            } : {} }
                         >
                             {/* Título do Mês Centralizado */}
                             <div className="text-center mb-2">

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Header from './components/Header';
 import DayView from './components/DayView';
 import YearView from './components/YearView.tsx';
@@ -24,10 +24,12 @@ const App: React.FC = () => {
     // Animações
     const [daySlideDir, setDaySlideDir] = useState<'right' | 'left' | null>(null);
     const [zoomOrigin, setZoomOrigin] = useState({x: 0, y: 0});
-    const [direction, setDirection] = useState<'in' | 'out'>('in');
     const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
     const [isExitingDay, setIsExitingDay] = useState(false);
     const [isExitingEvent, setIsExitingEvent] = useState(false);
+    const [isExitingMonth, setIsExitingMonth] = useState(false);
+    const isFirstLoad = useRef(true);
+    const [showMonthView, setShowMonthView] = useState(false);
 
     // Tema Inteligente
     const [theme, setTheme] = useState(() => {
@@ -87,11 +89,17 @@ const App: React.FC = () => {
         }
         setSelectedDay(day);
         if (monthIdx !== selectedMonthIdx) setSelectedMonthIdx(monthIdx);
+
+        setTimeout(() => {
+            setDaySlideDir(null);
+        }, 450);
     };
     const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
+        isFirstLoad.current = false;
+
         setZoomOrigin(coords);
-        setDirection('in');
         setSelectedMonthIdx(monthIdx);
+        setShowMonthView(true);
         setNavLevel('month_detail');
     };
 
@@ -119,8 +127,13 @@ const App: React.FC = () => {
     };
 
     const handleBackToYear = () => {
-        setDirection('out');
-        setNavLevel('year_list');
+        setIsExitingMonth(true);
+
+        setTimeout(() =>{
+            setNavLevel('year_list');
+            setShowMonthView(false);
+            setIsExitingMonth(false);
+        }, 480);
     }
 
     const handleEventSelect = (event: CalendarEvent) => {
@@ -148,6 +161,9 @@ const App: React.FC = () => {
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
     const showLegend = navLevel !== 'event_detail';
+    const showHeader = navLevel === 'year_list' && !showMonthView;
+
+    console.log('showMonthView:', showMonthView, 'isExitingMonth:', isExitingMonth);
 
     return (
         <div
@@ -157,7 +173,7 @@ const App: React.FC = () => {
             .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
 
-            {navLevel === 'year_list' && <Header currentYear={year}/>}
+            {showHeader && <Header currentYear={year}/>}
 
             <main className="flex-1 relative flex flex-col overflow-hidden">
 
@@ -167,25 +183,25 @@ const App: React.FC = () => {
                         currentYear={year}
                         initialMonthIdx={selectedMonthIdx}
                         onMonthClick={handleMonthSelect}
-                        animation={direction === 'out' ? 'animate-zoom-out' : ''}
-                        style={{
-                            transformOrigin: direction === 'out' ? `${zoomOrigin.x}px ${zoomOrigin.y}px` : 'center'
-                        }}
+                        isFirstLoad={isFirstLoad.current}
                     />
                 )}
 
                 {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
-                {navLevel === 'month_detail' && (
+                {showMonthView && (
                     <div
                         key="month-detail"
-                        className="flex-1 h-full w-full absolute inset-0 bg-white dark:bg-zinc-950"
+                        className={`absolute inset-0 z-10 bg-white dark:bg-zinc-950
+                            ${isExitingMonth ? 'animate-month-zoom-out' : 'animate-month-zoom-in'}`}
+                        style={{
+                            transformOrigin: `${zoomOrigin. x}px ${zoomOrigin.y}px`
+                        }}
                     >
                         <MonthView
                             year={year}
                             monthIdx={selectedMonthIdx}
                             onBack={handleBackToYear}
                             onDayClick={handleDaySelect}
-                            zoomOrigin={zoomOrigin}
                         />
                     </div>
                 )}
