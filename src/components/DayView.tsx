@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react';
+import React, {useMemo} from 'react';
 import {WEEK_DAYS, MONTH_NAMES, generateMockEvents, type CalendarEvent} from '../types';
 import {useDragScroll} from '../hooks/useDragScroll';
 import '../App.css';
@@ -10,7 +10,6 @@ interface DayViewProps {
     onBack: () => void;
     onChangeDate: (day: number, monthIdx: number, year: number) => void;
     onEventClick: (event: CalendarEvent) => void;
-    slideDir: 'right' | 'left' | null;
 }
 
 const HOUR_HEIGHT = 60;
@@ -23,36 +22,12 @@ const DayView: React.FC<DayViewProps> = ({
                                              onBack,
                                              onEventClick,
                                              onChangeDate,
-                                             slideDir
                                          }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
     const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
     const events = useMemo(() => generateMockEvents(selectedDay), [selectedDay]);
     const headerDate = new Date(currentYear, currentMonthIdx, selectedDay);
     const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
-
-    const touchStartX = useRef<number | null>(null)
-    const minSwipeDistance = 50;
-    const onTouchStart = (e: React.TouchEvent) => {
-        touchStartX.current = e.targetTouches[0].clientX;
-    };
-
-    const onTouchEnd = (e: React.TouchEvent) => {
-        if (!touchStartX.current) return;
-
-        const touchEndX = e.changedTouches[0].clientX;
-        const distance = touchStartX.current - touchEndX;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe || isRightSwipe) {
-            const diff = isLeftSwipe ? 1 : -1;
-
-            const newDate = new Date(currentYear, currentMonthIdx, selectedDay + diff);
-            onChangeDate(newDate.getDate(), newDate.getMonth(), newDate.getFullYear());
-        }
-        touchStartX.current = null;
-    }
 
     const getEventStyle = (type: string) => {
         switch (type) {
@@ -75,17 +50,8 @@ const DayView: React.FC<DayViewProps> = ({
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     };
 
-    const daySwipeAnim =
-        slideDir === 'right'
-            ? 'animate-day-swipe-from-right'
-            : slideDir === 'left'
-                ? 'animate-day-swipe-from-left'
-                : '';
-
     return (
         <div
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
             className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50"
         >
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 sticky top-0 z-20 backdrop-blur-sm
@@ -111,7 +77,8 @@ const DayView: React.FC<DayViewProps> = ({
                 <button
                     className='p-2 -mr-2 dark:text-white text-black'
                 >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         strokeWidth="2.5"
                          strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -121,7 +88,7 @@ const DayView: React.FC<DayViewProps> = ({
 
             <div
                 key={`${currentMonthIdx}-${selectedDay}`}
-                className={`flex-1 flex flex-col relative overflow-hidden ${daySwipeAnim}`}
+                className={`flex-1 flex flex-col relative overflow-hidden`}
             >
                 {/* TÍTULO DO DIA */}
                 <div className="p-3 px-4 text-lg font-semibold border-b text-gray-900 bg-gray-50 border-gray-200
@@ -141,17 +108,17 @@ const DayView: React.FC<DayViewProps> = ({
                             <div
                                 key={hour}
                                 className="relative"
-                                style={{ height: `${HOUR_HEIGHT}px` }}
+                                style={{height: `${HOUR_HEIGHT}px`}}
                             >
                                 <div
                                     className="absolute top-0 right-0 border-t border-gray-100 dark:border-zinc-800"
-                                    style={{ left: '52px' }}
+                                    style={{left: '52px'}}
                                 />
                                 <span
                                     className="absolute left-0 text-xs font-medium text-gray-400 dark:text-zinc-500 bg-white dark:bg-zinc-950 pr-3"
-                                    style={{ top: '-8px' }}
+                                    style={{top: '-8px'}}
                                 >
-                                    {hour. toString().padStart(2, '0')}:00
+                                    {hour.toString().padStart(2, '0')}:00
                                 </span>
                             </div>
                         ))}
@@ -162,22 +129,22 @@ const DayView: React.FC<DayViewProps> = ({
                             const topPosition = startHourIndex * HOUR_HEIGHT + (evt.startHour % 1) * HOUR_HEIGHT;
                             const eventHeight = evt.duration * HOUR_HEIGHT;
 
-                            const isShortEvent = evt. duration <= 1;
+                            const isShortEvent = evt.duration <= 1;
                             const isTinyEvent = evt.duration <= 0.5;
 
                             const startTime = formatTime(evt.startHour);
-                            const endTime = formatTime(evt.startHour + evt. duration);
+                            const endTime = formatTime(evt.startHour + evt.duration);
 
                             return (
                                 <div
-                                    key={evt. id}
+                                    key={evt.id}
                                     onClick={() => onEventClick(evt)}
                                     className={`absolute left-14 right-0 rounded-xl border-l-4 shadow-sm overflow-hidden cursor-pointer 
                                         hover:brightness-95 active:scale-[0.98] transition-transform z-10
-                                        ${getEventStyle(evt. type)}
+                                        ${getEventStyle(evt.type)}
                                         ${isShortEvent
-                                        ?  'flex flex-row items-center justify-between p-2 px-3'
-                                        :  'flex flex-col justify-center p-3'}
+                                        ? 'flex flex-row items-center justify-between p-2 px-3'
+                                        : 'flex flex-col justify-center p-3'}
                                     `}
                                     style={{
                                         top: `${topPosition}px`,
@@ -188,28 +155,32 @@ const DayView: React.FC<DayViewProps> = ({
                                         <>
                                             <div className="flex flex-col min-w-0 pr-2">
                                                 <span className="font-bold text-sm leading-tight truncate">
-                                                    {evt. title}
+                                                    {evt.title}
                                                 </span>
-                                                {! isTinyEvent && (
-                                                    <span className="text-[10px] font-bold opacity-60 uppercase leading-none mt-0.5">
+                                                {!isTinyEvent && (
+                                                    <span
+                                                        className="text-[10px] font-bold opacity-60 uppercase leading-none mt-0.5">
                                                         {evt.type}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-xs opacity-90 whitespace-nowrap font-medium shrink-0">
+                                            <div
+                                                className="text-xs opacity-90 whitespace-nowrap font-medium shrink-0">
                                                 {startTime}
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            <span className="text-[10px] font-bold opacity-70 uppercase leading-none mb-1">
+                                            <span
+                                                className="text-[10px] font-bold opacity-70 uppercase leading-none mb-1">
                                                 {evt.type}
                                             </span>
                                             <span className="font-bold text-base leading-tight truncate">
                                                 {evt.title}
                                             </span>
                                             <div className="mt-1.5 text-xs opacity-80 flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                     stroke="currentColor" strokeWidth="3">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <polyline points="12 6 12 12 16 14"></polyline>
                                                 </svg>

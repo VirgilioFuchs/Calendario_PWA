@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Header from './components/Header';
-import DayView from './components/DayView';
 import YearView from './components/YearView.tsx';
 import FooterStrip from './components/FooterStrip';
 import MonthView from './components/MonthView.tsx';
@@ -9,20 +8,26 @@ import EventDetailView from "./components/EventDetailView.tsx";
 import type {CalendarEvent} from "./types";
 
 import './App.css';
+import DayCarousel from "./components/DayCarousel.tsx";
 
 type NavLevel = 'year_list' | 'month_detail' | 'day_detail' | 'event_detail';
 
 const App: React.FC = () => {
+    // Informações da data do Calendário
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+    const fullYear = today.getFullYear();
+
     // Calendário Estado
     const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
     const [previousNavLevel, setPreviousNavLevel] = useState<'month_detail' | 'day_detail'>('month_detail');
-    const [year] = useState(2025);
-    const [selectedMonthIdx, setSelectedMonthIdx] = useState(10); // Default Novembro
-    const [selectedDay, setSelectedDay] = useState(13);
+    const [year, setYear] = useState(fullYear);
+    const [selectedMonthIdx, setSelectedMonthIdx] = useState(month); // Default Novembro
+    const [selectedDay, setSelectedDay] = useState(day);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
     // Animações
-    const [daySlideDir, setDaySlideDir] = useState<'right' | 'left' | null>(null);
     const [zoomOrigin, setZoomOrigin] = useState({x: 0, y: 0});
     const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
     const [isExitingDay, setIsExitingDay] = useState(false);
@@ -78,22 +83,20 @@ const App: React.FC = () => {
     };
 
     // HANDLERS DE NAVEGAÇÃO
-    const handleChangeDate = (day: number, monthIdx: number, targetYear: number) => {
+    const handleChangeDate = (
+        newDay: number,
+        newMonthIdx: number,
+        newYear: number
+    ) => {
+        const targetDate = new Date(newYear, newMonthIdx, newDay);
         const currentDate = new Date(year, selectedMonthIdx, selectedDay);
-        const newDate = new Date(targetYear, monthIdx, day);
-        if (newDate.getTime() === currentDate.getTime()) return;
-        if (newDate > currentDate) {
-            setDaySlideDir('right');
-        } else {
-            setDaySlideDir('left');
-        }
-        setSelectedDay(day);
-        if (monthIdx !== selectedMonthIdx) setSelectedMonthIdx(monthIdx);
+        if (targetDate.getTime() === currentDate.getTime()) return;
 
-        setTimeout(() => {
-            setDaySlideDir(null);
-        }, 450);
-    };
+        setSelectedDay(newDay);
+        if (newMonthIdx !== selectedMonthIdx) setSelectedMonthIdx(newMonthIdx);
+        setYear(newYear);
+    }
+
     const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
         isFirstLoad.current = false;
 
@@ -104,7 +107,6 @@ const App: React.FC = () => {
     };
 
     const handleDaySelect = (monthIdx: number, day: number, rect?: DOMRect) => {
-        setDaySlideDir(null)
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
         if (rect) {
@@ -163,8 +165,6 @@ const App: React.FC = () => {
     const showLegend = navLevel !== 'event_detail';
     const showHeader = navLevel === 'year_list' && !showMonthView;
 
-    console.log('showMonthView:', showMonthView, 'isExitingMonth:', isExitingMonth);
-
     return (
         <div
             className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans overflow-hidden transition-colors duration-300">
@@ -212,18 +212,19 @@ const App: React.FC = () => {
                         key="day-view-wrapper"
                         className={`
                              absolute inset-0 bg-white dark:bg-zinc-950 z-20
-                             ${isExitingDay ? 'animate-day-slide-down' : ''}
-                             ${navLevel === 'day_detail' && previousNavLevel === 'month_detail' && !isExitingEvent ? 'animate-day-slide-up' : ''}
-                        `}
+                             ${
+                            isExitingDay
+                                ? "animate-day-slide-down"
+                                : "animate-day-slide-up"
+                        }`}
                     >
-                        <DayView
+                        <DayCarousel
                             currentYear={year}
                             currentMonthIdx={selectedMonthIdx}
                             selectedDay={selectedDay}
                             onBack={handleBackToMonth}
-                            onEventClick={handleEventSelect}
                             onChangeDate={handleChangeDate}
-                            slideDir={daySlideDir}
+                            onEventClick={handleEventSelect}
                         />
                     </div>
                 )}

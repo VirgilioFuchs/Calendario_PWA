@@ -49,7 +49,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         const idx = Number(entry.target.getAttribute('data-month-index'));
-                        if (!isNaN(idx)) setVisibleMonthIdx(idx);
+                        if (!Number.isNaN(idx)) setVisibleMonthIdx(idx);
                     }
                 });
             },

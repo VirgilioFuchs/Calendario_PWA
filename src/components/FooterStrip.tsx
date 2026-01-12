@@ -87,7 +87,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
         while (loopDate <= endDate) {
             const y = loopDate. getFullYear();
-            const isHidden = y !== 2025;
+            const isHidden = y !== 2026;
 
             allDays.push({
                 day: loopDate.getDate(),
