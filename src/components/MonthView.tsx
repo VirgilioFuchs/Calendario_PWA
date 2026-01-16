@@ -1,6 +1,8 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {MONTH_NAMES, WEEK_DAYS_ABREVIATED, getDaysInMonth, generateMockEvents} from '../types';
+import React, {useEffect, useState, useRef, useMemo} from 'react';
+import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent, getDaysInMonth} from '../types';
 import {useDragScroll} from '../hooks/useDragScroll';
+import { eventsApi } from "../services/api";
+
 
 interface MonthDetailProps {
     year: number;
@@ -22,17 +24,54 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
+    const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchMonthEvents = async () => {
+            setLoading(true);
+            try {
+                const data = await eventsApi.getEventsByMonth(year, monthIdx);
+                setMonthEvents(data);
+            } catch (error) {
+                console.error('Erro ao carregar eventos:', error);
+                setMonthEvents([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMonthEvents();
+    }, [year, monthIdx]);
+
+// Agrupar eventos por dia
+    const eventsByDay = useMemo(() => {
+        const grouped: Record<number, CalendarEvent[]> = {};
+        monthEvents.forEach((evt) => {
+            const eventDate = new Date(evt.feriado_data);
+            const day = eventDate.getDate();
+
+            if (!grouped[day]) {
+                grouped[day] = [];
+            }
+            grouped[day].push(evt);
+        });
+
+        return grouped;
+    }, [monthEvents]);
+
 
     // Cores do evento
     const getEventStyle = (type: string) => {
-        switch (type) {
-            case 'Trabalho':
+        const tipoLower = type.toLowerCase()
+        switch (tipoLower) {
+            case 'trabalho':
                 return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-700';
-            case 'Férias':
+            case 'férias':
                 return 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-950/45 dark:text-green-200 dark:border-green-800';
-            case 'Feriado':
+            case 'feriado':
                 return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/45 dark:text-red-200 dark:border-red-800';
-            case 'Festa':
+            case 'festa':
                 return 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/45 dark:text-purple-200 dark:border-purple-800';
             default:
                 return 'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/45 dark:text-blue-200 dark:border-blue-800';
@@ -167,13 +206,13 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                 ))}
 
                                 {/* Dias */}
-                                {days.map(d => {
+                                {days.map((d) => {
                                     const dateObj = new Date(year, mIdx, d);
                                     const dayOfWeek = dateObj.getDay();
                                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0=Domingo e 6=Sábado
                                     const isFirstDay = d === 1;
                                     const isToday = d === currentDay && mIdx === currentMonth && year === currentYear;
-                                    const allEvents = generateMockEvents(d);
+                                    const allEvents = eventsByDay[d] || [];
                                     const visibleEvents = allEvents.slice(0, 2);
                                     const remainingEvents = allEvents.length - 2;
 
@@ -213,14 +252,14 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                 <div className="flex flex-col gap-[2px] w-full">
                                                     {visibleEvents.map((evt) => (
                                                         <div
-                                                            key={evt.id}
+                                                            key={evt.feriado_id}
                                                             className={`
                                                                 block w-auto max-w-full truncate rounded-[2px] px-1 py-0 text-[8.5px] leading-[11px] font-semibold border-l-[3px] text-left mx-0.5
-                                                                ${getEventStyle(evt.type)}
+                                                                ${getEventStyle(evt.feriado_tipo)}
                                                             `}
-                                                            title={evt.title}
+                                                            title={evt.feriado_titulo}
                                                         >
-                                                            {evt.type}
+                                                            {evt.feriado_tipo}
                                                         </div>
                                                     ))}
                                                 </div>

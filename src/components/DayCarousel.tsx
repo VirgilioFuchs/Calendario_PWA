@@ -1,4 +1,5 @@
 // components/DayCarousel.tsx
+
 import React, { useRef, useState } from "react";
 import DayView from "./DayView";
 import type { CalendarEvent } from "../types";
@@ -20,23 +21,16 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                                                      onChangeDate,
                                                      onEventClick,
                                                  }) => {
-    const [dragX, setDragX] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const [isHorizontalSwipe, setIsHorizontalSwipe] =
-        useState<boolean | null>(null);
-
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
+    const [isHorizontalSwipe, setIsHorizontalSwipe] = useState<boolean | null>(null);
 
     const baseDate = new Date(currentYear, currentMonthIdx, selectedDay);
-    const prevDate = new Date(currentYear, currentMonthIdx, selectedDay - 1);
-    const nextDate = new Date(currentYear, currentMonthIdx, selectedDay + 1);
 
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         const touch = e.touches[0];
         touchStartX.current = touch.clientX;
         touchStartY.current = touch.clientY;
-        setIsDragging(true);
         setIsHorizontalSwipe(null);
     };
 
@@ -56,16 +50,11 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
 
             if (absX > absY) {
                 setIsHorizontalSwipe(true);
-                e.preventDefault();
             } else {
                 setIsHorizontalSwipe(false);
             }
         }
-
-        if (isHorizontalSwipe === false) return;
-
-        setDragX(deltaX);
-        e.preventDefault();
+        // Não precisa movimentar nada visualmente
     };
 
     const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -74,25 +63,22 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
             touchStartY.current == null ||
             isHorizontalSwipe !== true
         ) {
-            setDragX(0);
-            setIsDragging(false);
-            setIsHorizontalSwipe(null);
             touchStartX.current = null;
             touchStartY.current = null;
+            setIsHorizontalSwipe(null);
             return;
         }
 
         const touch = e.changedTouches[0];
         const deltaX = touch.clientX - touchStartX.current;
-
         const screenWidth = window.innerWidth || 1;
         const threshold = screenWidth * 0.3;
 
         let diff = 0;
         if (deltaX <= -threshold) {
-            diff = 1;
+            diff = 1;   // próximo dia
         } else if (deltaX >= threshold) {
-            diff = -1;
+            diff = -1;  // dia anterior
         }
 
         if (diff !== 0) {
@@ -100,15 +86,13 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
             onChangeDate(
                 newDate.getDate(),
                 newDate.getMonth(),
-                newDate.getFullYear()
+                newDate.getFullYear(),
             );
         }
 
-        setDragX(0);
-        setIsDragging(false);
-        setIsHorizontalSwipe(null);
         touchStartX.current = null;
         touchStartY.current = null;
+        setIsHorizontalSwipe(null);
     };
 
     return (
@@ -118,50 +102,13 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            <div
-                className="flex h-full"
-                style={{
-                    width: "300%",
-                    transform: `translateX(calc(${dragX}px - 100%))`,
-                    transition: isDragging ? "none" : "transform 0.2s ease-out",
-                }}
-            >
-                {/* Dia anterior */}
-                <div className="w-full h-full shrink-0">
-                    <DayView
-                        currentYear={prevDate.getFullYear()}
-                        currentMonthIdx={prevDate.getMonth()}
-                        selectedDay={prevDate.getDate()}
-                        onBack={onBack}
-                        onChangeDate={onChangeDate}
-                        onEventClick={onEventClick}
-                    />
-                </div>
-
-                {/* Dia atual */}
-                <div className="w-full h-full shrink-0">
-                    <DayView
-                        currentYear={baseDate.getFullYear()}
-                        currentMonthIdx={baseDate.getMonth()}
-                        selectedDay={baseDate.getDate()}
-                        onBack={onBack}
-                        onChangeDate={onChangeDate}
-                        onEventClick={onEventClick}
-                    />
-                </div>
-
-                {/* Dia seguinte */}
-                <div className="w-full h-full shrink-0">
-                    <DayView
-                        currentYear={nextDate.getFullYear()}
-                        currentMonthIdx={nextDate.getMonth()}
-                        selectedDay={nextDate.getDate()}
-                        onBack={onBack}
-                        onChangeDate={onChangeDate}
-                        onEventClick={onEventClick}
-                    />
-                </div>
-            </div>
+            <DayView
+                currentYear={baseDate.getFullYear()}
+                currentMonthIdx={baseDate.getMonth()}
+                selectedDay={baseDate.getDate()}
+                onBack={onBack}
+                onEventClick={onEventClick}
+            />
         </div>
     );
 };
