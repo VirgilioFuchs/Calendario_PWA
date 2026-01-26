@@ -33,7 +33,7 @@ const DayView: React.FC<DayViewProps> = ({
     const headerDate = new Date(currentYear, currentMonthIdx, selectedDay);
     const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
     const [events, setEvents] = useState<CalendarEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false); // Desenvolver a tela de carregamento
 
     const allDayEvents = useMemo(() =>
             events.filter(evt => evt.feriado_dia_inteiro),
@@ -60,7 +60,6 @@ const DayView: React.FC<DayViewProps> = ({
                 setIsLoading(false);
             }
         };
-
         fetchDayEvents();
     }, [currentYear, currentMonthIdx, selectedDay]);
 
@@ -85,6 +84,7 @@ const DayView: React.FC<DayViewProps> = ({
         const m = Math.round((decimalTime - h) * 60);
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     };
+
 
     return (
         <div

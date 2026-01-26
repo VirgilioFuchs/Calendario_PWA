@@ -2,6 +2,11 @@ import type { CalendarEvent } from '../types';
 
 const API_URL = "http://192.168.70.163:8000";
 
+const parseDateLocal = (dateString: string): Date => {
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 export const eventsApi = {
     async getAllEvents(): Promise<CalendarEvent[]> {
         const response = await fetch(`${API_URL}/events_list`);
@@ -9,20 +14,27 @@ export const eventsApi = {
         return await response.json();
     },
 
+    async getEventsByYear(year: number): Promise<CalendarEvent[]> {
+        const allEvents = await this.getAllEvents();
+        return allEvents.filter(event => {
+            const [y, m, d] = event.feriado_data.split('T')[0].split('-').map(Number);
+            const eventDate = new Date(y, m -1, d);
+            return eventDate.getFullYear() === year;
+        });
+    },
+
     async getEventsByMonth(year: number, monthIdx: number): Promise<CalendarEvent[]> {
         const allEvents = await this.getAllEvents();
-
         return allEvents.filter(event => {
-            const eventDate = new Date(event.feriado_data);
+            const eventDate = parseDateLocal(event.feriado_data);
             return eventDate.getFullYear() === year && eventDate.getMonth() === monthIdx;
         });
     },
 
     async getEventsByDay(year: number, monthIdx: number, day: number): Promise<CalendarEvent[]> {
         const allEvents = await this.getAllEvents();
-
         return allEvents.filter(event => {
-            const eventDate = new Date(event.feriado_data);
+            const eventDate = parseDateLocal(event.feriado_data);
             return (
                 eventDate.getFullYear() === year &&
                 eventDate.getMonth() === monthIdx &&

@@ -1,14 +1,16 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {motion, AnimatePresence, type Variants} from "framer-motion";
 import Header from './components/Header';
-import YearView from './components/YearView.tsx';
+import YearView, {type YearViewHandle } from './components/YearView.tsx';
 import FooterStrip from './components/FooterStrip';
 import MonthView from './components/MonthView.tsx';
 import FooterConfig from "./components/FooterConfig.tsx";
 import EventDetailView from "./components/EventDetailView.tsx";
 import type {CalendarEvent} from "./types";
-
+import {useOrientation} from "./hooks/useOrientation.ts";
 import './App.css';
 import DayCarousel from "./components/DayCarousel.tsx";
+
 
 type NavLevel = 'year_list' | 'month_detail' | 'day_detail' | 'event_detail';
 
@@ -16,25 +18,27 @@ const App: React.FC = () => {
     // Informações da data do Calendário
     const today = new Date();
     const day = today.getDate();
-    const month = today.getMonth() + 1;
+    const month = today.getMonth();
     const fullYear = today.getFullYear();
 
     // Calendário Estado
     const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
     const [previousNavLevel, setPreviousNavLevel] = useState<'month_detail' | 'day_detail'>('month_detail');
     const [year, setYear] = useState(fullYear);
-    const [selectedMonthIdx, setSelectedMonthIdx] = useState(month); // Default Novembro
+    const [selectedMonthIdx, setSelectedMonthIdx] = useState(month);
     const [selectedDay, setSelectedDay] = useState(day);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
+    const orientation = useOrientation();
+
     // Animações
     const [zoomOrigin, setZoomOrigin] = useState({x: 0, y: 0});
-    const [weekAnimOriginY, setWeekAnimOriginY] = useState(0);
-    const [isExitingDay, setIsExitingDay] = useState(false);
-    const [isExitingEvent, setIsExitingEvent] = useState(false);
-    const [isExitingMonth, setIsExitingMonth] = useState(false);
+    const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
     const isFirstLoad = useRef(true);
-    const [showMonthView, setShowMonthView] = useState(false);
+
+    const yearViewScrollRef = useRef(0);
+    const yearViewRef = useRef<YearViewHandle>(null);
+    const hasInitialScrolled = useRef(false);
 
     // Tema Inteligente
     const [theme, setTheme] = useState(() => {
@@ -73,6 +77,7 @@ const App: React.FC = () => {
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, []);
 
+
     // Função de Troca Manual (Botão)
     const toggleTheme = () => {
         setTheme(prev => {
@@ -80,6 +85,93 @@ const App: React.FC = () => {
             localStorage.setItem('theme', newTheme);
             return newTheme;
         });
+    };
+
+    useEffect(() => {
+        // Delay para garantir que o DOM está pronto
+        const timer = setTimeout(() => {
+            if (hasInitialScrolled.current) return;
+
+            const monthCard = document.querySelector(`#month-card-${month}`); // Usa 'month' do início
+            if (monthCard) {
+                monthCard.scrollIntoView({block: 'center', behavior: 'smooth'});
+                hasInitialScrolled.current = true;
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    const yearViewVariants: Variants = {
+        initial: {
+            opacity: 1,
+            scale: 1,
+        },
+        animate: {
+            opacity: 1,
+            scale: 1,
+        },
+        exit: {
+            opacity: 0,
+            scale: animDirection === 'forward' ? 0.95 : 1.02,
+            y: animDirection === 'forward' ? -20 : 0,
+            transition: {
+                duration: 0.2,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        }
+    };
+
+    const monthViewVariants: Variants = {
+        initial: {
+            opacity: 0,
+            y: animDirection === 'forward' ? 20 : -20,
+            scale: animDirection === 'forward' ? 0.96 : 1.02,
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                duration: 0.18,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        },
+        exit: {
+            opacity: 0,
+            y: animDirection === 'backward' ? 12 : -12,
+            scale: animDirection === 'backward' ? 0.96 : 1.02,
+            transition: {
+                duration: 0.16,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        }
+    };
+
+    const dayViewVariants: Variants = {
+        initial: {
+            opacity: 0,
+            y: animDirection === 'forward' ? 20 : -20,
+            scale: animDirection === 'forward' ? 0.96 : 1.02,
+        },
+        animate: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                duration: 0.18,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        },
+        exit: {
+            opacity: 0,
+            y: animDirection === 'backward' ? 12 : -12,
+            scale: animDirection === 'backward' ? 0.96 : 1.02,
+            transition: {
+                duration: 0.16,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        }
     };
 
     // HANDLERS DE NAVEGAÇÃO
@@ -100,172 +192,199 @@ const App: React.FC = () => {
     const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
         isFirstLoad.current = false;
 
+        if (yearViewRef.current) {
+            yearViewScrollRef.current = yearViewRef.current.getScrollTop();
+        }
+
         setZoomOrigin(coords);
         setSelectedMonthIdx(monthIdx);
-        setShowMonthView(true);
+        setAnimDirection('forward');
         setNavLevel('month_detail');
     };
 
-    const handleDaySelect = (monthIdx: number, day: number, rect?: DOMRect) => {
+    const handleDaySelect = (monthIdx: number, day: number) => {
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
-        if (rect) {
-            setWeekAnimOriginY(rect.top)
-        }
-
+        setAnimDirection('forward');
         setPreviousNavLevel('month_detail');
-
-        requestAnimationFrame(() => {
-            setNavLevel('day_detail');
-        });
+        setNavLevel('day_detail');
     };
 
     const handleBackToMonth = () => {
-        setIsExitingDay(true)
-        setTimeout(() => {
-            setNavLevel('month_detail');
-            setIsExitingDay(false);
-        }, 320);
+        setAnimDirection('backward');
+        setNavLevel('month_detail');
     };
 
     const handleBackToYear = () => {
-        setIsExitingMonth(true);
+        setAnimDirection('backward');
+        setNavLevel('year_list');
 
-        setTimeout(() =>{
-            setNavLevel('year_list');
-            setShowMonthView(false);
-            setIsExitingMonth(false);
-        }, 480);
-    }
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (yearViewRef.current && yearViewScrollRef.current > 0) {
+                    yearViewRef.current.setScrollTop(yearViewScrollRef.current)
+                }
+            });
+        });
+    };
 
     const handleEventSelect = (event: CalendarEvent) => {
         setSelectedEvent(event);
-
-        if (navLevel === 'month_detail') {
-            setPreviousNavLevel('month_detail');
-        } else if (navLevel === 'day_detail') {
-            setPreviousNavLevel('day_detail');
-        }
-
-        setIsExitingEvent(false);
+        setPreviousNavLevel(navLevel === 'month_detail' ? 'month_detail' : 'day_detail');
         setNavLevel('event_detail');
     }
 
     const handleBackFromEvent = () => {
-        setIsExitingEvent(true);
-        setTimeout(() => {
-            setNavLevel(previousNavLevel);
-            setSelectedEvent(null);
-            setIsExitingEvent(false);
-        }, 380);
+        setNavLevel(previousNavLevel);
+        setSelectedEvent(null);
     }
 
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
     const showLegend = navLevel !== 'event_detail';
-    const showHeader = navLevel === 'year_list' && !showMonthView;
 
     return (
-        <div
-            className="flex flex-col h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans overflow-hidden transition-colors duration-300">
-            <style>{`
-            .scrollbar-hide::-webkit-scrollbar { display: none; }
-            .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
+        <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-zinc-950">
+            {/* Header - só aparece no YearView */}
+            {navLevel === 'year_list' && (
+                <Header currentYear={year}/>
+            )}
 
-            {showHeader && <Header currentYear={year}/>}
+            {/* Container principal com AnimatePresence */}
+            <div className="flex-1 overflow-hidden">
+                <AnimatePresence mode="wait" initial={false}>
+                    {/* YearView */}
+                    {navLevel === 'year_list' && (
+                        <motion.div
+                            key="year-view"
+                            variants={yearViewVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            className="h-full overflow-hidden"
+                            style={{ willChange: 'transform, opacity' }}
+                        >
+                            <YearView
+                                ref={yearViewRef}
+                                currentYear={year}
+                                onMonthClick={handleMonthSelect}
+                                isFirstLoad={isFirstLoad.current}
+                            />
+                        </motion.div>
+                    )}
 
-            <main className="flex-1 relative flex flex-col overflow-hidden">
+                    {/* MonthView */}
+                    {navLevel === 'month_detail' && (
+                        <motion.div
+                            key="month-view"
+                            variants={monthViewVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            className="h-full overflow-hidden"
+                            style={{ willChange: 'transform, opacity' }}
+                        >
+                            <MonthView
+                                year={year}
+                                monthIdx={selectedMonthIdx}
+                                onBack={handleBackToYear}
+                                onDayClick={handleDaySelect}
+                                zoomOrigin={zoomOrigin}
+                            />
+                        </motion.div>
+                    )}
 
-                {/* NÍVEL 0: LISTA DE MESES (Sem Spy Scroll no Header, apenas grade) */}
-                {navLevel === 'year_list' && (
-                    <YearView
+                    {/* DayView */}
+                    {navLevel === 'day_detail' && (
+                        <motion.div
+                            key="day"
+                            variants={dayViewVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            className="h-full overflow-hidden"
+                            style={{ willChange: 'transform, opacity' }}
+                        >
+                            {orientation === 'landscape' ? (
+                                // ✅ Layout Landscape: DayCarousel à esquerda + FooterStrip vertical à direita
+                                <div className="flex h-full">
+                                    {/* Área principal do DayCarousel */}
+                                    <div className="flex-1 overflow-hidden">
+                                        <DayCarousel
+                                            currentYear={year}
+                                            currentMonthIdx={selectedMonthIdx}
+                                            selectedDay={selectedDay}
+                                            onBack={handleBackToMonth}
+                                            onChangeDate={handleChangeDate}
+                                            onEventClick={handleEventSelect}
+                                        />
+                                    </div>
+
+                                    {/* FooterStrip vertical no lado direito */}
+                                    <div className="w-16 border-l border-gray-200 dark:border-zinc-800 overflow-hidden flex-shrink-0">
+                                        <FooterStrip
+                                            currentYear={year}
+                                            currentMonthIdx={selectedMonthIdx}
+                                            selectedDay={selectedDay}
+                                            onSelectDay={handleChangeDate}
+                                            orientation="vertical"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                // ✅ Layout Portrait: DayCarousel ocupa tudo (FooterStrip fica embaixo fora do motion.div)
+                                <DayCarousel
+                                    currentYear={year}
+                                    currentMonthIdx={selectedMonthIdx}
+                                    selectedDay={selectedDay}
+                                    onBack={handleBackToMonth}
+                                    onChangeDate={handleChangeDate}
+                                    onEventClick={handleEventSelect}
+                                />
+                            )}
+                        </motion.div>
+                    )}
+
+                    {/* EventDetailView */}
+                    {navLevel === 'event_detail' && selectedEvent && (
+                        <motion.div
+                            key="event-view"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -12 }}
+                            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                            className="h-full overflow-hidden"
+                        >
+                            <EventDetailView
+                                event={selectedEvent}
+                                onBack={handleBackFromEvent}
+                                previousView={previousNavLevel}
+                                currentMonthIdx={selectedMonthIdx}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* ✅ MODIFICADO: Footers - FooterStrip só aparece em portrait */}
+            <div>
+                {showFooter && orientation === 'portrait' && (
+                    <FooterStrip
                         currentYear={year}
-                        initialMonthIdx={selectedMonthIdx}
-                        onMonthClick={handleMonthSelect}
-                        isFirstLoad={isFirstLoad.current}
+                        currentMonthIdx={selectedMonthIdx}
+                        selectedDay={selectedDay}
+                        onSelectDay={handleChangeDate}
+                        orientation="horizontal"
+                        className={showLegend ? 'bottom-12 border-t border-gray-200 dark:border-zinc-800' : 'bottom-0'}
                     />
                 )}
-
-                {/* NÍVEL 1: DETALHE DO MÊS (Com Spy Scroll interno) */}
-                {showMonthView && (
-                    <div
-                        key="month-detail"
-                        className={`absolute inset-0 z-10 bg-white dark:bg-zinc-950
-                            ${isExitingMonth ? 'animate-month-zoom-out' : 'animate-month-zoom-in'}`}
-                        style={{
-                            transformOrigin: `${zoomOrigin. x}px ${zoomOrigin.y}px`
-                        }}
-                    >
-                        <MonthView
-                            year={year}
-                            monthIdx={selectedMonthIdx}
-                            onBack={handleBackToYear}
-                            onDayClick={handleDaySelect}
-                        />
-                    </div>
+                {showLegend && (
+                    <FooterConfig
+                        currentTheme={theme}
+                        onToggleTheme={toggleTheme}
+                    />
                 )}
-
-                {/* NÍVEL 2: DETALHE DO DIA (Timeline) */}
-                {(navLevel === 'day_detail' || isExitingDay || navLevel === 'event_detail') && (
-                    <div
-                        key="day-view-wrapper"
-                        className={`
-                             absolute inset-0 bg-white dark:bg-zinc-950 z-20
-                             ${
-                            isExitingDay
-                                ? "animate-day-slide-down"
-                                : "animate-day-slide-up"
-                        }`}
-                    >
-                        <DayCarousel
-                            currentYear={year}
-                            currentMonthIdx={selectedMonthIdx}
-                            selectedDay={selectedDay}
-                            onBack={handleBackToMonth}
-                            onChangeDate={handleChangeDate}
-                            onEventClick={handleEventSelect}
-                        />
-                    </div>
-                )}
-
-
-                {navLevel === 'event_detail' && selectedEvent && (
-                    <div className={`absolute inset-0 z-30 bg-white dark:bg-zinc-950 shadow-2xl
-                            ${isExitingEvent ? 'animate-slide-out-right-cover' : 'animate-slide-in-right-cover'}
-                        `}
-                    >
-                        <EventDetailView
-                            event={selectedEvent}
-                            currentYear={year}
-                            currentMonthIdx={selectedMonthIdx}
-                            previousView={previousNavLevel}
-                            onBack={handleBackFromEvent}
-                        />
-                    </div>
-                )}
-            </main>
-
-            {(showFooter || isExitingDay) && (
-                <FooterStrip
-                    currentYear={year}
-                    currentMonthIdx={selectedMonthIdx}
-                    selectedDay={selectedDay}
-                    onSelectDay={handleChangeDate}
-                    className={`
-                        ${showLegend ? 'bottom-12 border-b border-gray-200 dark:border-zinc-800' : 'bottom-0'}
-                        ${isExitingDay ? 'animate-slide-down-footer' : 'animate-slide-up-footer'}
-                    `}
-                    animStartY={weekAnimOriginY}
-                    isExiting={isExitingDay}
-                />
-            )}
-
-            {showLegend && (
-                <FooterConfig
-                    currentTheme={theme}
-                    onToggleTheme={toggleTheme}/>
-            )}
+            </div>
         </div>
     );
 };

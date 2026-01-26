@@ -28,10 +28,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const fetchMonthEvents = async () => {
+        const fetchYearEvents = async () => {
             setLoading(true);
             try {
-                const data = await eventsApi.getEventsByMonth(year, monthIdx);
+                const data = await eventsApi.getEventsByYear(year);
                 setMonthEvents(data);
             } catch (error) {
                 console.error('Erro ao carregar eventos:', error);
@@ -41,20 +41,26 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             }
         };
 
-        fetchMonthEvents();
-    }, [year, monthIdx]);
+        fetchYearEvents();
+    }, [year]);
 
 // Agrupar eventos por dia
-    const eventsByDay = useMemo(() => {
-        const grouped: Record<number, CalendarEvent[]> = {};
-        monthEvents.forEach((evt) => {
-            const eventDate = new Date(evt.feriado_data);
-            const day = eventDate.getDate();
+    const eventsByMonthAndDay = useMemo(() => {
+        const grouped: Record<number, Record<number, CalendarEvent[]>> = {};
 
-            if (!grouped[day]) {
-                grouped[day] = [];
+        monthEvents.forEach((evt: CalendarEvent) => {
+            const [year, month, day] = evt.feriado_data.split('T')[0].split('-').map(Number);
+            const eventDate = new Date(year, month - 1, day);
+            const monthNum = eventDate.getMonth();
+            const dayNum = eventDate.getDate();
+
+            if (!grouped[monthNum]) {
+                grouped[monthNum] = {};
             }
-            grouped[day].push(evt);
+            if (!grouped[monthNum][dayNum]) {
+                grouped[monthNum][dayNum] = [];
+            }
+            grouped[monthNum][dayNum].push(evt);
         });
 
         return grouped;
@@ -212,7 +218,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0=Domingo e 6=Sábado
                                     const isFirstDay = d === 1;
                                     const isToday = d === currentDay && mIdx === currentMonth && year === currentYear;
-                                    const allEvents = eventsByDay[d] || [];
+                                    const allEvents: CalendarEvent[] = eventsByMonthAndDay[mIdx]?.[d] || [];
                                     const visibleEvents = allEvents.slice(0, 2);
                                     const remainingEvents = allEvents.length - 2;
 

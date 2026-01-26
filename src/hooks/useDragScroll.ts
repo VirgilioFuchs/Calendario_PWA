@@ -1,4 +1,4 @@
-// Lógica para funcionar o mouse como scroll (teste temporário para touch)
+// Lógica para funcionar o mouse como scroll
 import { useEffect, useRef } from 'react';
 
 export function useDragScroll<T extends HTMLElement>() {

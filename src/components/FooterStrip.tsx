@@ -1,5 +1,6 @@
 import React, {useMemo, useEffect, useState, useRef, useCallback} from 'react';
 import {WEEK_DAYS_ABREVIATED} from '../types';
+import clsx from "clsx";
 
 interface FooterStripProps {
     currentYear: number;
@@ -7,6 +8,7 @@ interface FooterStripProps {
     selectedDay: number;
     onSelectDay: (day: number, monthIdx: number, year: number) => void;
     className?: string;
+    orientation?: 'horizontal' | 'vertical'
     animStartY?: number;
     isExiting?: boolean;
 }
@@ -19,8 +21,10 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                                                      onSelectDay,
                                                      className = 'bottom-0',
                                                      animStartY,
+                                                     orientation,
                                                      isExiting
                                                  }) => {
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const [offsetY, setOffSetY] = useState(0);
 
@@ -31,7 +35,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
     useEffect(() => {
         selectedDayRef.current = selectedDay;
-        currentMonthIdxRef. current = currentMonthIdx;
+        currentMonthIdxRef.current = currentMonthIdx;
         currentYearRef.current = currentYear;
     }, [selectedDay, currentMonthIdx, currentYear]);
 
@@ -50,7 +54,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
     useEffect(() => {
         if (animStartY !== undefined) {
             const footerHeight = 80;
-            const bottomSpace = className. includes('bottom-12') ? 48 : 0;
+            const bottomSpace = className.includes('bottom-12') ? 48 : 0;
             const footerFinalY = window.innerHeight - footerHeight - bottomSpace;
             const delta = animStartY - footerFinalY;
 
@@ -69,7 +73,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
     const today = new Date();
     const todayDay = today.getDate();
-    const todayMonth = today. getMonth();
+    const todayMonth = today.getMonth();
     const todayYear = today.getFullYear();
 
     const weeks = useMemo(() => {
@@ -86,7 +90,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
         const loopDate = new Date(startDate);
 
         while (loopDate <= endDate) {
-            const y = loopDate. getFullYear();
+            const y = loopDate.getFullYear();
             const isHidden = y !== 2026;
 
             allDays.push({
@@ -95,22 +99,22 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                 year: y,
                 weekDay: loopDate.getDay(),
                 fullDate: new Date(loopDate),
-                isHidden:  isHidden,
+                isHidden: isHidden,
                 uniqueId: `${y}-${loopDate.getMonth()}-${loopDate.getDate()}`
             });
-            loopDate. setDate(loopDate.getDate() + 1);
+            loopDate.setDate(loopDate.getDate() + 1);
         }
 
         const chunks = [];
         for (let i = 0; i < allDays.length; i += 7) {
-            chunks. push(allDays.slice(i, i + 7));
+            chunks.push(allDays.slice(i, i + 7));
         }
         return chunks;
     }, [currentYear, currentMonthIdx]);
 
     const weeksRef = useRef(weeks);
     useEffect(() => {
-        weeksRef. current = weeks;
+        weeksRef.current = weeks;
     }, [weeks]);
 
     // Função otimizada para selecionar dia
@@ -119,20 +123,20 @@ const FooterStrip: React.FC<FooterStripProps> = ({
         if (index < 0 || index >= currentWeeks.length) return;
 
         // Evita re-seleção do mesmo índice
-        if (index === lastSelectedIndex. current) return;
+        if (index === lastSelectedIndex.current) return;
         lastSelectedIndex.current = index;
 
         const targetWeek = currentWeeks[index];
         const dayToSelect = targetWeek.find(d => d.weekDay === targetWeekDayRef.current);
 
-        if (dayToSelect && ! dayToSelect.isHidden) {
+        if (dayToSelect && !dayToSelect.isHidden) {
             const isSameSelection =
                 dayToSelect.day === selectedDayRef.current &&
                 dayToSelect.monthIdx === currentMonthIdxRef.current &&
                 dayToSelect.year === currentYearRef.current;
 
             if (!isSameSelection) {
-                onSelectDay(dayToSelect. day, dayToSelect.monthIdx, dayToSelect.year);
+                onSelectDay(dayToSelect.day, dayToSelect.monthIdx, dayToSelect.year);
             }
         }
     }, [onSelectDay]);
@@ -141,7 +145,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
     const handleScroll = useCallback(() => {
         if (isScrolling.current) return;
 
-        const container = scrollRef. current;
+        const container = scrollRef.current;
         if (!container) return;
 
         const width = container.clientWidth;
@@ -154,7 +158,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
     // Usa scrollend se disponível, senão usa scroll normal
     useEffect(() => {
         const container = scrollRef.current;
-        if (! container) return;
+        if (!container) return;
 
         // Tenta usar scrollend (mais preciso)
         const supportsScrollEnd = 'onscrollend' in window;
@@ -176,29 +180,42 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
     // Auto-scroll para a semana do dia selecionado
     useEffect(() => {
-        if (! scrollRef.current) return;
+        if (!scrollRef.current) return;
 
         const weekIndex = weeks.findIndex(week =>
-            week.some(d => d. day === selectedDay && d.monthIdx === currentMonthIdx && d.year === currentYear)
+            week.some(d => d.day === selectedDay && d.monthIdx === currentMonthIdx && d.year === currentYear)
         );
 
         if (weekIndex !== -1) {
-            const containerWidth = scrollRef. current.clientWidth;
-            const targetLeft = containerWidth * weekIndex;
+            const containerSize = orientation === 'vertical'
+                ? scrollRef.current.clientHeight
+                : scrollRef.current.clientWidth;
+            const targetScroll = containerSize * weekIndex;
+            const currentScroll = orientation === 'vertical'
+                ? scrollRef.current.scrollTop
+                : scrollRef.current.scrollLeft;
 
-            if (Math.abs(scrollRef.current.scrollLeft - targetLeft) > 10) {
+            if (Math.abs(currentScroll - targetScroll) > 10) {
                 isScrolling.current = true;
                 lastSelectedIndex.current = weekIndex;
 
-                scrollRef.current. scrollTo({
-                    left: targetLeft,
-                    behavior: 'smooth'
-                });
+                if (orientation === 'vertical') {
+                    scrollRef.current.scrollTo({
+                        top: targetScroll,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    scrollRef.current.scrollTo({
+                        left: targetScroll,
+                        behavior: 'smooth'
+                    });
+                }
 
-                // Usa requestAnimationFrame para detectar fim do scroll
                 const checkScrollEnd = () => {
-                    const current = scrollRef.current?. scrollLeft ??  0;
-                    if (Math.abs(current - targetLeft) < 5) {
+                    const current = orientation === 'vertical'
+                        ? (scrollRef.current?.scrollTop ?? 0)
+                        : (scrollRef.current?.scrollLeft ?? 0);
+                    if (Math.abs(current - targetScroll) < 5) {
                         isScrolling.current = false;
                     } else {
                         requestAnimationFrame(checkScrollEnd);
@@ -207,18 +224,85 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                 requestAnimationFrame(checkScrollEnd);
             }
         }
-    }, [selectedDay, currentMonthIdx, currentYear, weeks]);
+    }, [selectedDay, currentMonthIdx, currentYear, weeks, orientation]);
 
     const handleDayClick = (day: number, monthIdx: number, year: number) => {
         if (isScrolling.current) return;
         onSelectDay(day, monthIdx, year);
     };
 
+    // LAYOUT LANDSCAPE (VERTICAL)
+    if (orientation === 'vertical') {
+        return (
+            <div className="h-full w-full bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md border-l border-gray-200 dark:border-zinc-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.35)]">
+                <div
+                    ref={scrollRef}
+                    onScroll={handleScroll}
+                    className="flex flex-col items-center w-full h-full overflow-y-auto scrollbar-hide snap-y snap-mandatory"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                    {weeks.map((week, wIdx) => (
+                        <div
+                            key={`week-${wIdx}`}
+                            className="flex-none min-h-full h-full w-full flex flex-col justify-center items-center snap-center snap-always py-2"
+                        >
+                            {week.map((item) => {
+                                if (item.isHidden) {
+                                    return <div key={item.uniqueId} className="flex-1 w-full" />;
+                                }
+
+                                const isSelected = item.day === selectedDay && item.monthIdx === currentMonthIdx;
+                                const isWeekend = item.weekDay === 0 || item.weekDay === 6;
+                                const isToday = item.day === todayDay && item.monthIdx === todayMonth && item.year === todayYear;
+
+                                return (
+                                    <button
+                                        key={item.uniqueId}
+                                        onClick={() => handleDayClick(item.day, item.monthIdx, item.year)}
+                                        className={clsx(
+                                            'flex flex-col items-center justify-center w-full py-1.5 transition-all duration-200',
+                                            !isSelected && 'active:scale-95'
+                                        )}
+                                    >
+                                        <span className={clsx(
+                                            'text-[9px] font-bold uppercase mb-0.5 transition-colors',
+                                            isSelected
+                                                ? 'text-gray-900 dark:text-zinc-100'
+                                                : isWeekend
+                                                    ? 'text-gray-400 dark:text-zinc-500'
+                                                    : 'text-gray-800 dark:text-zinc-400'
+                                        )}>
+                                            {WEEK_DAYS_ABREVIATED[item.weekDay]}
+                                        </span>
+
+                                        <div className={clsx(
+                                            'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300',
+                                            isSelected
+                                                ? 'bg-black text-white scale-110 shadow-md dark:bg-zinc-100 dark:text-zinc-950'
+                                                : isToday
+                                                    ? 'bg-gray-200 text-gray-900 border border-gray-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700'
+                                                    : isWeekend
+                                                        ? 'text-gray-400 dark:text-zinc-500'
+                                                        : 'text-gray-800 dark:text-zinc-200'
+                                        )}>
+                                            {item.day}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // LAYOUT PORTRAIT (HORIZONTAL)
     return (
         <div
             style={{ transform: `translateY(${offsetY}px)` }}
-                className={`
-                 h-20 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md
+            className={`
+                h-20 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md
                 border-t border-gray-200 dark:border-zinc-800
                 fixed left-0 right-0 z-[60] flex items-center
                 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.35)]
@@ -266,13 +350,13 @@ const FooterStrip: React.FC<FooterStripProps> = ({
                                     </span>
 
                                     <div className={`
-                                         w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
+                                        w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
                                         ${isSelected
                                         ? 'bg-black text-white scale-110 shadow-md dark:bg-zinc-100 dark:text-zinc-950'
                                         : isToday
                                             ? 'bg-gray-200 text-gray-900 border border-gray-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700'
-                                            : `${isWeekend ? 'text-gray-400 dark:text-zinc-500' 
-                                                           : 'text-gray-800 dark:text-zinc-200'}
+                                            : `${isWeekend ? 'text-gray-400 dark:text-zinc-500'
+                                                : 'text-gray-800 dark:text-zinc-200'}
                                             `}
                                     `}>
                                         {item.day}
