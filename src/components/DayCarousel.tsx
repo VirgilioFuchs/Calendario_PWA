@@ -11,6 +11,7 @@ interface DayCarouselProps {
     onBack: () => void;
     onChangeDate: (day: number, monthIdx: number, year: number) => void;
     onEventClick: (event: CalendarEvent) => void;
+    horizontalMode?: boolean;
 }
 
 const DayCarousel: React.FC<DayCarouselProps> = ({
@@ -20,6 +21,7 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                                                      onBack,
                                                      onChangeDate,
                                                      onEventClick,
+                                                     horizontalMode = false,
                                                  }) => {
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
@@ -108,6 +110,7 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                 selectedDay={baseDate.getDate()}
                 onBack={onBack}
                 onEventClick={onEventClick}
+                horizontalMode={horizontalMode}
             />
         </div>
     );

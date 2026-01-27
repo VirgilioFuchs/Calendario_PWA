@@ -241,7 +241,8 @@ const App: React.FC = () => {
 
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
-    const showLegend = navLevel !== 'event_detail';
+    const showLegend = navLevel !== 'event_detail' &&
+        !(navLevel === 'day_detail' && orientation === 'landscape');
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-zinc-950">
@@ -306,7 +307,6 @@ const App: React.FC = () => {
                             style={{ willChange: 'transform, opacity' }}
                         >
                             {orientation === 'landscape' ? (
-                                // ✅ Layout Landscape: DayCarousel à esquerda + FooterStrip vertical à direita
                                 <div className="flex h-full">
                                     {/* Área principal do DayCarousel */}
                                     <div className="flex-1 overflow-hidden">
@@ -317,6 +317,7 @@ const App: React.FC = () => {
                                             onBack={handleBackToMonth}
                                             onChangeDate={handleChangeDate}
                                             onEventClick={handleEventSelect}
+                                            horizontalMode={true}
                                         />
                                     </div>
 
@@ -332,7 +333,6 @@ const App: React.FC = () => {
                                     </div>
                                 </div>
                             ) : (
-                                // ✅ Layout Portrait: DayCarousel ocupa tudo (FooterStrip fica embaixo fora do motion.div)
                                 <DayCarousel
                                     currentYear={year}
                                     currentMonthIdx={selectedMonthIdx}
@@ -340,6 +340,7 @@ const App: React.FC = () => {
                                     onBack={handleBackToMonth}
                                     onChangeDate={handleChangeDate}
                                     onEventClick={handleEventSelect}
+
                                 />
                             )}
                         </motion.div>
@@ -366,7 +367,7 @@ const App: React.FC = () => {
                 </AnimatePresence>
             </div>
 
-            {/* ✅ MODIFICADO: Footers - FooterStrip só aparece em portrait */}
+            {/* Footers */}
             <div>
                 {showFooter && orientation === 'portrait' && (
                     <FooterStrip

@@ -10,6 +10,7 @@ interface DayViewProps {
     selectedDay: number;
     onBack: () => void;
     onEventClick: (event: CalendarEvent) => void;
+    horizontalMode?: boolean;
 }
 
 const HOUR_HEIGHT = 60;
@@ -27,6 +28,7 @@ const DayView: React.FC<DayViewProps> = ({
                                              selectedDay,
                                              onBack,
                                              onEventClick,
+                                             horizontalMode = false,
                                          }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
     const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
@@ -34,6 +36,7 @@ const DayView: React.FC<DayViewProps> = ({
     const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(false); // Desenvolver a tela de carregamento
+    const [activeTab, setActiveTab] = useState<'legendas' | 'eventos'>('eventos');
 
     const allDayEvents = useMemo(() =>
             events.filter(evt => evt.feriado_dia_inteiro),
@@ -90,6 +93,7 @@ const DayView: React.FC<DayViewProps> = ({
         <div
             className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50 max-w-[100vw]"
         >
+            {/* HEADER */}
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 sticky top-0 z-20 backdrop-blur-sm
                 bg-white/90 border-gray-200 hover:bg-gray-50
                 dark:bg-zinc-950/80 dark:border-zinc-800 dark:hover:bg-zinc-900/40">
@@ -110,9 +114,7 @@ const DayView: React.FC<DayViewProps> = ({
                 </button>
 
                 {/* Lupa - desenvolver a pesquisa de eventos*/}
-                <button
-                    className='p-2 -mr-2 dark:text-white text-black'
-                >
+                <button className='p-2 -mr-2 dark:text-white text-black'>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          strokeWidth="2.5"
                          strokeLinecap="round" strokeLinejoin="round">
@@ -122,20 +124,16 @@ const DayView: React.FC<DayViewProps> = ({
                 </button>
             </div>
 
-            <div
-                key={`${currentMonthIdx}-${selectedDay}`}
-                className={`flex-1 flex flex-col relative overflow-hidden`}
-            >
-                {/* TÍTULO DO DIA */}
+            {/* TÍTULO DO DIA */}
+            {!horizontalMode && (
                 <div className="text-center py-3 px-4 border-b border-gray-200 dark:border-zinc-800">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
                         {dayTitle}
                     </h2>
-
                     {allDayEvents.length > 0 && (
                         <div className="mt-2 justify-center">
-                            <span className="text-xs font-semibold text-gray-600 dark:text-zinc-400">
-                                Dia inteiro:{' '}
+                        <span className="text-xs font-semibold text-gray-600 dark:text-zinc-400">
+                            Dia inteiro:{' '}
                         </span>
                             <div className="mt-1 flex flex-wrap gap-2 justify-center">
                                 {allDayEvents.map((evt) => (
@@ -143,25 +141,31 @@ const DayView: React.FC<DayViewProps> = ({
                                         key={evt.feriado_id}
                                         onClick={() => onEventClick(evt)}
                                         className={`
-                                            px-2 py-1 rounded text-xs font-medium cursor-pointer
-                                            hover:brightness-95 transition-all
-                                             ${getCalendarEventStyle(evt.feriado_tipo)}
-                                        `}
+                                        px-2 py-1 rounded text-xs font-medium cursor-pointer
+                                        hover:brightness-95 transition-all
+                                        ${getCalendarEventStyle(evt.feriado_tipo)}
+                                    `}
                                     >
-                                        {evt.feriado_titulo}
-                                    </span>
+                                    {evt.feriado_titulo}
+                                </span>
                                 ))}
                             </div>
                         </div>
                     )}
                 </div>
+            )}
 
-                {/* TIMELINE DOS EVENTOS */}
+            {/* TIMELINE DOS EVENTOS */}
+            <div
+                className={horizontalMode ? 'flex flex-row flex-1 overflow-hidden' : 'flex flex-col flex-1 overflow-hidden'}>
+                {/* TIMELINE - 60% no horizontal, 100% no vertical */}
                 <div
                     ref={containerRef}
-                    className={`flex-1 overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500 px-4`}
+                    className={`overflow-y-auto relative cursor-grab active:cursor-grabbing select-none bg-white dark:bg-zinc-950 dark:accent-indigo-500 px-4
+                    ${horizontalMode ? 'w-[60%] border-r border-gray-200 dark:border-zinc-800' : 'flex-1'}
+                `}
                 >
-                    <div className="relative pt-6 pb-14 max-w-full overflow-hidden">
+                    <div className={`relative pt-6 max-w-full overflow-hidden ${horizontalMode ? 'pb-0.5' : 'pb-14'}`}>
                         {/* Linhas de hora */}
                         {hours.map((hour) => (
                             <div
@@ -171,14 +175,14 @@ const DayView: React.FC<DayViewProps> = ({
                             >
                                 <div
                                     className="absolute top-0 right-0 border-t border-gray-100 dark:border-zinc-800"
-                                    style={{left: '52px'}}
+                                    style={{left: '56px'}}
                                 />
                                 <span
                                     className="absolute left-0 text-xs font-medium text-gray-400 dark:text-zinc-500 bg-white dark:bg-zinc-950 pr-3"
                                     style={{top: '-8px'}}
                                 >
-                                    {hour.toString().padStart(2, '0')}:00
-                                </span>
+                                {hour.toString().padStart(2, '0')}:00
+                            </span>
                             </div>
                         ))}
 
@@ -198,7 +202,6 @@ const DayView: React.FC<DayViewProps> = ({
                             const topPosition = startHourIndex * HOUR_HEIGHT + (startHour % 1) * HOUR_HEIGHT;
                             const eventHeight = duration * HOUR_HEIGHT;
                             const isShortEvent = duration <= 1;
-                            const isTinyEvent = duration <= 0.5;
                             const startTime = formatTime(startHour);
                             const endTime = formatTime(startHour + duration);
 
@@ -207,12 +210,12 @@ const DayView: React.FC<DayViewProps> = ({
                                     key={evt.feriado_id}
                                     onClick={() => onEventClick(evt)}
                                     className={`absolute left-14 right-0 rounded-xl border-l-4 shadow-sm overflow-hidden cursor-pointer 
-                                        hover:brightness-95 active:scale-[0.98] transition-transform z-10
-                                        ${getCalendarEventStyle(evt.feriado_tipo)}
-                                        ${isShortEvent
-                                        ? 'flex flex-row items-center justify-between p-2 px-3'
-                                        : 'flex flex-col justify-center p-3'}
-                                    `}
+                                    hover:brightness-95 active:scale-[0.98] transition-transform z-10
+                                    ${getCalendarEventStyle(evt.feriado_tipo)}
+                                    ${isShortEvent
+                                        ? 'flex flex-row items-start justify-between p-2 px-3'
+                                        : 'flex flex-col justify-start p-3'}
+                                `}
                                     style={{
                                         top: `${topPosition}px`,
                                         height: `${Math.max(eventHeight, 40)}px`,
@@ -221,30 +224,19 @@ const DayView: React.FC<DayViewProps> = ({
                                     {isShortEvent ? (
                                         <>
                                             <div className="flex flex-col min-w-0 pr-2">
-                                                <span className="font-bold text-sm leading-tight truncate">
-                                                    {evt.feriado_titulo}
-                                                </span>
-                                                {!isTinyEvent && (
-                                                    <span
-                                                        className="text-[10px] font-bold opacity-60 uppercase leading-none mt-0.5">
-                                                        {evt.feriado_tipo}
-                                                    </span>
-                                                )}
+                                            <span className="font-bold text-sm leading-tight truncate">
+                                                {evt.feriado_titulo}
+                                            </span>
                                             </div>
-                                            <div
-                                                className="text-xs opacity-90 whitespace-nowrap font-medium shrink-0">
+                                            <div className="text-xs opacity-90 whitespace-nowrap font-medium shrink-0">
                                                 {startTime}
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            <span
-                                                className="text-[10px] font-bold opacity-70 uppercase leading-none mb-1">
-                                                {evt.feriado_tipo}
-                                            </span>
-                                            <span className="font-bold text-base leading-tight truncate">
-                                                {evt.feriado_titulo}
-                                            </span>
+                                        <span className="font-bold text-base leading-tight truncate">
+                                            {evt.feriado_titulo}
+                                        </span>
                                             <div className="mt-1.5 text-xs opacity-80 flex items-center gap-1">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                                                      stroke="currentColor" strokeWidth="3">
@@ -260,9 +252,51 @@ const DayView: React.FC<DayViewProps> = ({
                         })}
                     </div>
                 </div>
+
+                {/* PAINEL DIREITO - 40% */}
+                {horizontalMode && (
+                    <div
+                        className="w-[40%] flex flex-col overflow-hidden border-b border-gray-200 dark:border-zinc-700">
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <h2 className="text-lg text-center font-semibold text-gray-800 dark:text-zinc-100">
+                                {dayTitle}
+                            </h2>
+                        </div>
+                        {/* Navigation Bottom */}
+                        <div className="px-6 pb-1.5">
+                            <div className="bg-white dark:bg-zinc-800 rounded-md shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                                <div className="flex">
+                                    <button
+                                        onClick={() => setActiveTab('legendas')}
+                                        className={`flex-1 py-1.5 text-xs font-medium transition-colors
+                    border-r border-gray-200 dark:border-zinc-700
+                    ${activeTab === 'legendas'
+                                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                        }`}
+                                    >
+                                        Legendas
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('eventos')}
+                                        className={`flex-1 py-1.5 text-xs font-medium transition-colors
+                    ${activeTab === 'eventos'
+                                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                        }`}
+                                    >
+                                        Eventos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
             </div>
         </div>
     );
+
 };
 
 export default DayView;
