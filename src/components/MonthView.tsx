@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useRef, useMemo} from 'react';
 import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent, getDaysInMonth} from '../types';
 import {useDragScroll} from '../hooks/useDragScroll';
-import { eventsApi } from "../services/api";
+import { eventsApi } from "../services/apiCache";
 
 
 interface MonthDetailProps {
@@ -24,18 +24,19 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
+    const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchYearEvents = async () => {
             setLoading(true);
             try {
                 const data = await eventsApi.getEventsByYear(year);
-                setMonthEvents(data);
+                setYearEvents(data);
             } catch (error) {
                 console.error('Erro ao carregar eventos:', error);
-                setMonthEvents([]);
+                setYearEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -48,7 +49,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const eventsByMonthAndDay = useMemo(() => {
         const grouped: Record<number, Record<number, CalendarEvent[]>> = {};
 
-        monthEvents.forEach((evt: CalendarEvent) => {
+        yearEvents.forEach((evt: CalendarEvent) => {
             const [year, month, day] = evt.feriado_data.split('T')[0].split('-').map(Number);
             const eventDate = new Date(year, month - 1, day);
             const monthNum = eventDate.getMonth();
@@ -64,7 +65,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         });
 
         return grouped;
-    }, [monthEvents]);
+    }, [yearEvents]);
 
 
     // Cores do evento
@@ -134,6 +135,22 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         onDayClick(mIdx, d, rect);
     };
 
+    const handleRefresh = async () => {
+        setLoading(true);
+        try {
+            const startDate = `${year}-01-01`;
+            const endDate = `${year}-12-31`;
+            const data = await eventsApi.forceRefresh(startDate, endDate);
+            setYearEvents(data);
+            console.log('Cache Atualizado');
+        } catch (err) {
+            console.error('Erro ao atualizar:', err);
+            setError(err instanceof Error ? err.message : 'Erro ao atualizar');
+        } finally {
+             setLoading(false);
+        }
+    }
+
     return (
         <div className="flex-1 flex flex-col bg-white h-full relative z-50 dark:bg-zinc-950 transition-colors">
 
@@ -179,6 +196,20 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                     ))}
                 </div>
             </div>
+
+            {/* ✅ Loading indicator */}
+            {loading && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg text-sm">
+                    📦 Carregando eventos...
+                </div>
+            )}
+
+            {/* ✅ Error message */}
+            {error && (
+                <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+                    ⚠️ {error}
+                </div>
+            )}
 
             {/* ÁREA DE ROLAGEM DOS MESES */}
             <div
@@ -256,9 +287,9 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
                                                 {/* Lista de Eventos */}
                                                 <div className="flex flex-col gap-[2px] w-full">
-                                                    {visibleEvents.map((evt) => (
+                                                    {visibleEvents.map((evt, idx) => (
                                                         <div
-                                                            key={evt.feriado_id}
+                                                            key={`${evt.feriado_id}-${idx}`}
                                                             className={`
                                                                 block w-auto max-w-full truncate rounded-[2px] px-1 py-0 text-[8.5px] leading-[11px] font-semibold border-l-[3px] text-left mx-0.5
                                                                 ${getEventStyle(evt.feriado_tipo)}

@@ -1,7 +1,7 @@
 import React, {useRef, useState } from "react";
 
 // Lista de Legendas
-const EVENT_LEGEND = [
+export const EVENT_LEGEND = [
     { label: 'Trabalho', class: 'bg-gray-100 text-gray-700 border-l-4 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500' },
     { label: 'Férias',   class: 'bg-green-100 text-green-800 border-l-4 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500' },
     { label: 'Feriado',  class: 'bg-red-100 text-red-800 border-l-4 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500' },

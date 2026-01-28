@@ -8,6 +8,7 @@ const parseDateLocal = (dateString: string): Date => {
 };
 
 export const eventsApi = {
+
     async getAllEvents(): Promise<CalendarEvent[]> {
         const response = await fetch(`${API_URL}/events_list`);
         if (!response.ok) throw new Error('Erro ao buscar eventos');
