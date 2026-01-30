@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {WEEK_DAYS, MONTH_NAMES, type CalendarEvent} from '../types';
 import {eventsApi} from "../services/apiNoCache.ts";
 import {EVENT_LEGEND} from './FooterConfig';
@@ -12,6 +12,7 @@ interface DayViewProps {
     onBack: () => void;
     onEventClick: (event: CalendarEvent) => void;
     horizontalMode?: boolean;
+    onDayChange?: (day: number) => void;
 }
 
 const HOUR_HEIGHT = 60;
@@ -30,6 +31,7 @@ const DayView: React.FC<DayViewProps> = ({
                                              onBack,
                                              onEventClick,
                                              horizontalMode = false,
+                                             onDayChange,
                                          }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
     const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
@@ -37,8 +39,10 @@ const DayView: React.FC<DayViewProps> = ({
     const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(false); // Desenvolver a tela de carregamento
-    const [activeTab, setActiveTab] = useState<'legendas' | 'eventos'>('eventos');
+    const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dias'>('eventos');
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const panelScrollRef = useRef<HTMLDivElement>(null);
 
     const allDayEvents = useMemo(() =>
             events.filter(evt => evt.feriado_dia_inteiro),
@@ -49,6 +53,12 @@ const DayView: React.FC<DayViewProps> = ({
             events.filter(evt => !evt.feriado_dia_inteiro),
         [events]
     );
+
+    const daysInMonth = useMemo(() => {
+        const date = new Date(currentYear, currentMonthIdx + 1, 0);
+        const totalDays = date.getDate();
+        return Array.from({length: totalDays}, (_, i) => i + 1);
+    }, [currentYear, currentMonthIdx]);
 
     useEffect(() => {
         const fetchDayEvents = async () => {
@@ -67,6 +77,15 @@ const DayView: React.FC<DayViewProps> = ({
         };
         fetchDayEvents();
     }, [currentYear, currentMonthIdx, selectedDay]);
+
+    useEffect(() => {
+        if (horizontalMode && panelScrollRef.current) {
+            panelScrollRef.current.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    }, [activeTab, horizontalMode]);
 
     const getCalendarEventStyle = (type: string) => {
         const tipoLower = type.toLowerCase();
@@ -110,10 +129,38 @@ const DayView: React.FC<DayViewProps> = ({
         if (horizontalMode) {
             setSelectedEventId(evt.feriado_id);
             setActiveTab('eventos');
+
+            setTimeout(() => {
+                const eventElement = eventRefs.current.get(evt.feriado_id);
+                if (eventElement) {
+                    eventElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }, 100);
         } else {
             onEventClick(evt);
         }
     };
+
+    const sortedEvents = useMemo(() => {
+        return [...events].sort((a, b) => {
+            // Se ambos têm horário de início
+            if (a.feriado_inicio && b.feriado_inicio) {
+                const timeA = timeStringToDecimal(a.feriado_inicio);
+                const timeB = timeStringToDecimal(b.feriado_inicio);
+                return timeA - timeB;
+            }
+
+            // Eventos sem horário vão para o final
+            if (!a.feriado_inicio) return 1;
+            if (!b.feriado_inicio) return -1;
+
+            return 0;
+        });
+    }, [events]);
 
     return (
         <div
@@ -138,6 +185,12 @@ const DayView: React.FC<DayViewProps> = ({
                         {MONTH_NAMES[currentMonthIdx]}
                     </span>
                 </button>
+
+                {horizontalMode && (
+                    <div className="text-base font-semibold text-gray-800 dark:text-zinc-100 absolute left-1/2 -translate-x-1/2">
+                        {selectedDay} de {MONTH_NAMES[currentMonthIdx]} de {currentYear}
+                    </div>
+                )}
 
                 {/* Lupa - desenvolver a pesquisa de eventos*/}
                 <button className='p-2 -mr-2 dark:text-white text-black'>
@@ -192,6 +245,37 @@ const DayView: React.FC<DayViewProps> = ({
                 `}
                 >
                     <div className={`relative pt-6 max-w-full overflow-hidden ${horizontalMode ? 'pb-0.5' : 'pb-14'}`}>
+
+                        {/* Container de eventos dia inteiro nos 60% */}
+                        {horizontalMode && allDayEvents.length > 0 && (
+                            <div className="mb-4 -mt-2">
+                                <div
+                                    className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-2 border border-gray-200 dark:border-zinc-800">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                         <span
+                                             className="text-xs font-semibold text-gray-600 dark:text-zinc-400 shrink-0">
+                                            Dia inteiro:
+                                         </span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {allDayEvents.map((evt) => (
+                                                <button
+                                                    key={evt.feriado_id}
+                                                    onClick={() => handleEventClickInternal(evt)}
+                                                    className={`px-2 py-1 rounded text-xs font-medium cursor-pointer
+                                                    hover:brightness-95 transition-all border-l-2
+                                                    ${getCalendarEventStyle(evt.feriado_tipo)}
+                                                    ${selectedEventId === evt.feriado_id ? `ring-1 ${getEventRingColor(evt.feriado_tipo)}` : ''}
+                                                `}
+                                                >
+                                                    {evt.feriado_titulo}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Linhas de hora */}
                         {hours.map((hour) => (
                             <div
@@ -234,6 +318,13 @@ const DayView: React.FC<DayViewProps> = ({
                             return (
                                 <div
                                     key={evt.feriado_id}
+                                    ref={(el) => {
+                                        if (el) {
+                                            eventRefs.current.set(evt.feriado_id, el);
+                                        } else {
+                                            eventRefs.current.delete(evt.feriado_id);
+                                        }
+                                    }}
                                     onClick={() => handleEventClickInternal(evt)}
                                     className={`absolute left-14 right-0 rounded-xl border-l-4 shadow-sm overflow-hidden cursor-pointer 
                                         hover:brightness-95 active:scale-[0.98] transition-transform z-10
@@ -284,21 +375,15 @@ const DayView: React.FC<DayViewProps> = ({
                 {horizontalMode && (
                     <div
                         className="w-[40%] flex flex-col overflow-hidden border-l border-gray-200 dark:border-zinc-700">
-                        <div className="flex-1 overflow-y-auto">
-                            {/* Título sticky */}
-                            <div
-                                className="sticky top-0 bg-gray-50 dark:bg-zinc-950 z-10 border-b border-gray-200 dark:border-zinc-800">
-                                <h2 className="text-lg text-center font-semibold text-gray-800 dark:text-zinc-100 py-3">
-                                    {dayTitle}
-                                </h2>
-                            </div>
-
+                        <div
+                            ref={panelScrollRef}
+                            className="flex-1 overflow-y-auto">
                             {/* Conteúdo scrollável */}
                             <div className="p-4">
                                 {activeTab === 'legendas' ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-3">
+                                            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-3 text-center">
                                                 Tipos de Eventos
                                             </h3>
                                         </div>
@@ -313,6 +398,105 @@ const DayView: React.FC<DayViewProps> = ({
                                             ))}
                                         </div>
                                     </div>
+                                ) : activeTab === 'dias' ? (
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h3 className="text-base font-semibold text-gray-800 dark:text-zinc-200 mb-1 text-center">
+                                                {MONTH_NAMES[currentMonthIdx]}
+                                            </h3>
+                                        </div>
+
+                                        {/* Grid compacto de dias */}
+                                        <div className="bg-white dark:bg-zinc-900 rounded-xl p-2 border border-gray-200 dark:border-zinc-800">
+                                            {/* Headers da Semana */}
+                                            <div className="grid grid-cols-7 gap-0.5 mb-1 pb-0.5 border-b border-gray-200 dark:border-zinc-700">
+                                                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`text-center text-[10px] font-medium pb-1
+                                                            ${i === 0 || i === 6
+                                                            ? 'text-gray-400 dark:text-zinc-500'
+                                                            : 'text-gray-800 dark:text-zinc-400'
+                                                            }`}
+                                                    >
+                                                        {day}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Grid de dias */}
+                                            <div className="grid grid-cols-7 gap-0.5">
+                                                {(() => {
+                                                    const firstDayIdx = new Date(currentYear, currentMonthIdx, 1).getDay();
+                                                    const blanks = Array.from({ length: firstDayIdx }, (_, i) => i);
+                                                    const totalSlots = 35;
+                                                    const usedSlots = blanks.length + daysInMonth.length;
+                                                    const trailingBlanks = Array.from({ length: totalSlots - usedSlots }, (_, i) => i);
+
+                                                    return (
+                                                        <>
+                                                            {/* Dias em branco antes do início do mês */}
+                                                            {blanks.map(b => (
+                                                                <div
+                                                                    key={`blank-start-${b}`}
+                                                                    className="aspect-square"
+                                                                />
+                                                            ))}
+
+                                                            {/* Dias do mês */}
+                                                            {daysInMonth.map((day) => {
+                                                                const dayOfWeek = (firstDayIdx + day - 1) % 7;
+                                                                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                                                                const isSelected = day === selectedDay;
+                                                                const isToday = day === new Date().getDate() &&
+                                                                    currentMonthIdx === new Date().getMonth() &&
+                                                                    currentYear === new Date().getFullYear();
+
+                                                                return (
+                                                                    <button
+                                                                        key={day}
+                                                                        onClick={() => {
+                                                                            if (onDayChange) {
+                                                                                onDayChange(day);
+                                                                            }
+                                                                        }}
+                                                                        className={`
+                                                                            aspect-square flex items-center justify-center transition-all duration-200
+                                                                            ${!isSelected ? 'active:scale-95' : ''}
+                                                                        `}
+                                                                    >
+                                                                        <div
+                                                                            className={`
+                                                                                flex items-center justify-center text-xs font-medium transition-all
+                                                                                ${isSelected
+                                                                                    ? 'w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
+                                                                                    : isToday
+                                                                                        ? 'w-7 h-7 rounded-full bg-gray-200 text-gray-900 dark:bg-zinc-700 dark:text-zinc-100 font-semibold'
+                                                                                        : isWeekend
+                                                                                            ? 'text-gray-400 dark:text-zinc-500'
+                                                                                            : 'text-gray-700 dark:text-zinc-300'
+                                                                                }
+                                                                            `}
+                                                                        >
+                                                                            {day}
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+
+                                                            {/* Dias em branco após o final do mês */}
+                                                            {trailingBlanks.map(b => (
+                                                                <div
+                                                                    key={`blank-end-${b}`}
+                                                                    className="aspect-square"
+                                                                />
+                                                            ))}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="space-y-3">
                                         {selectedEventId ? (
@@ -324,7 +508,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                     <div className="space-y-4">
                                                         <button
                                                             onClick={() => setSelectedEventId(null)}
-                                                            className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 transition-colors"
+                                                            className="flex items-center gap-2 text-sm text-gray-600 dark:text-white hover:text-gray-900 dark:hover:text-zinc-200 transition-colors"
                                                         >
                                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                                                                  stroke="currentColor" strokeWidth="2">
@@ -397,17 +581,17 @@ const DayView: React.FC<DayViewProps> = ({
                                             })()
                                         ) : (
                                             <>
-                                                <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">
+                                                <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 text-center">
                                                     Eventos do Dia
                                                 </h3>
 
-                                                {events.length === 0 ? (
+                                                {sortedEvents.length === 0 ? (
                                                     <p className="text-xs text-gray-400 dark:text-zinc-500 text-center py-8">
                                                         Nenhum evento neste dia
                                                     </p>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        {events.map((evt) => (
+                                                        {sortedEvents.map((evt) => (
                                                             <div
                                                                 key={evt.feriado_id}
                                                                 onClick={() => handleEventClickInternal(evt)}
@@ -418,12 +602,16 @@ const DayView: React.FC<DayViewProps> = ({
                                                             >
                                                                 <div
                                                                     className="font-medium text-sm">{evt.feriado_titulo}</div>
-                                                                {evt.feriado_inicio && (
-                                                                    <div className="text-xs opacity-70 mt-1">
-                                                                        {evt.feriado_inicio}
-                                                                        {evt.feriado_fim && ` - ${evt.feriado_fim}`}
-                                                                    </div>
-                                                                )}
+                                                                <div className="text-xs opacity-70 mt-1">
+                                                                    {evt.feriado_dia_inteiro ? (
+                                                                        'Dia Inteiro'
+                                                                    ) : evt.feriado_inicio ? (
+                                                                        <>
+                                                                            {formatTime(timeStringToDecimal(evt.feriado_inicio))}
+                                                                            {evt.feriado_fim && ` - ${formatTime(timeStringToDecimal(evt.feriado_fim))}`}
+                                                                        </>
+                                                                    ) : null}
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -459,6 +647,16 @@ const DayView: React.FC<DayViewProps> = ({
                                         }`}
                                     >
                                         Eventos
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('dias')}
+                                        className={`flex-1 py-1.5 text-xs font-medium transition-colors
+                                            ${activeTab === 'dias'
+                                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                        }`}
+                                    >
+                                        Dias
                                     </button>
                                 </div>
                             </div>

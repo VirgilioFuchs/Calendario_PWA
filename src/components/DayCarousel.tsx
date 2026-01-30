@@ -111,6 +111,14 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                 onBack={onBack}
                 onEventClick={onEventClick}
                 horizontalMode={horizontalMode}
+                onDayChange={(day) => {
+                    const newDate = new Date(currentYear, currentMonthIdx, day);
+                    onChangeDate(
+                        newDate.getDate(),
+                        newDate.getMonth(),
+                        newDate.getFullYear()
+                    );
+                }}
             />
         </div>
     );

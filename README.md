@@ -8,3 +8,4 @@ Desenvolver o dateHelpers
 
 criar uma condição de verificação de SDK (para evitar crash em dispositivos antigos)
 Adicionar suporte para tablets
+Verificar com o superior sobre a necessidade de adicionar uma semana de eventos no DayView
