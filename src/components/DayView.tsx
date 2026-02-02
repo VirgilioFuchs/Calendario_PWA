@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {WEEK_DAYS, MONTH_NAMES, type CalendarEvent} from '../types';
-import {eventsApi} from "../services/apiNoCache.ts";
+import {eventsApi} from "../services/apiCache.ts";
 import {EVENT_LEGEND} from './FooterConfig';
 import {useDragScroll} from '../hooks/useDragScroll';
 import '../App.css';
@@ -12,7 +12,7 @@ interface DayViewProps {
     onBack: () => void;
     onEventClick: (event: CalendarEvent) => void;
     horizontalMode?: boolean;
-    onDayChange?: (day: number) => void;
+    onDayClick: (monthIdx: number, day: number, react?: DOMRect) => void;
 }
 
 const HOUR_HEIGHT = 60;
@@ -31,7 +31,7 @@ const DayView: React.FC<DayViewProps> = ({
                                              onBack,
                                              onEventClick,
                                              horizontalMode = false,
-                                             onDayChange,
+                                             onDayClick,
                                          }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
     const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
@@ -161,6 +161,15 @@ const DayView: React.FC<DayViewProps> = ({
             return 0;
         });
     }, [events]);
+
+    const handleDayClick = (e: React.MouseEvent<HTMLButtonElement>, mIdx: number, d: number) => {
+        if (horizontalMode){
+            onDayClick(mIdx, d);
+        } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            onDayClick(mIdx, d, rect);
+        }
+    };
 
     return (
         <div
@@ -455,11 +464,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                                 return (
                                                                     <button
                                                                         key={day}
-                                                                        onClick={() => {
-                                                                            if (onDayChange) {
-                                                                                onDayChange(day);
-                                                                            }
-                                                                        }}
+                                                                        onClick={(e) => handleDayClick(e, currentMonthIdx, day)}
                                                                         className={`
                                                                             aspect-square flex items-center justify-center transition-all duration-200
                                                                             ${!isSelected ? 'active:scale-95' : ''}

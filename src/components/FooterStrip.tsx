@@ -148,35 +148,44 @@ const FooterStrip: React.FC<FooterStripProps> = ({
         const container = scrollRef.current;
         if (!container) return;
 
-        const width = container.clientWidth;
-        const scrollPos = container.scrollLeft;
-        const index = Math.round(scrollPos / width);
+        let index = 0;
+        if (orientation === 'vertical') {
+            const height = container.clientHeight;
+            const scrollPos = container.scrollTop;
+            index = Math.round(scrollPos / height);
+        } else {
+            const width = container.clientWidth;
+            const scrollPos = container.scrollLeft;
+            index = Math.round(scrollPos / width);
+        }
 
         selectDayFromIndex(index);
-    }, [selectDayFromIndex]);
+    }, [selectDayFromIndex, orientation]);
 
     // Usa scrollend se disponível, senão usa scroll normal
     useEffect(() => {
         const container = scrollRef.current;
         if (!container) return;
 
-        // Tenta usar scrollend (mais preciso)
-        const supportsScrollEnd = 'onscrollend' in window;
+        const onScrollEnd = () => {
+            if (isScrolling.current) return;
 
-        if (supportsScrollEnd) {
-            const onScrollEnd = () => {
-                if (isScrolling.current) return;
+            const index = orientation === 'vertical'
+                ? Math.round(container.scrollTop / container.clientHeight)
+                : Math.round(container.scrollLeft / container.clientWidth);
 
-                const width = container.clientWidth;
-                const scrollPos = container.scrollLeft;
-                const index = Math.round(scrollPos / width);
-                selectDayFromIndex(index);
-            };
+            selectDayFromIndex(index);
+        };
 
-            container.addEventListener('scrollend', onScrollEnd);
-            return () => container.removeEventListener('scrollend', onScrollEnd);
-        }
-    }, [selectDayFromIndex]);
+        container.addEventListener('scrollend', onScrollEnd);
+        // Fallback para navegadores antigos que não tem scrollend
+        container.addEventListener('scroll', handleScroll);
+
+        return () => {
+            container.removeEventListener('scrollend', onScrollEnd);
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, [selectDayFromIndex, orientation, handleScroll]);
 
     // Auto-scroll para a semana do dia selecionado
     useEffect(() => {

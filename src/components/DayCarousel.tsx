@@ -97,6 +97,13 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
         setIsHorizontalSwipe(null);
     };
 
+    const handleDayClick = (monthIdx: number, day:number) => {
+        if (monthIdx === currentMonthIdx && day === selectedDay) {
+            return;
+        }
+        onChangeDate(day, monthIdx, currentYear);
+    }
+
     return (
         <div
             className="absolute inset-0 overflow-hidden bg-white dark:bg-zinc-950"
@@ -111,14 +118,7 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                 onBack={onBack}
                 onEventClick={onEventClick}
                 horizontalMode={horizontalMode}
-                onDayChange={(day) => {
-                    const newDate = new Date(currentYear, currentMonthIdx, day);
-                    onChangeDate(
-                        newDate.getDate(),
-                        newDate.getMonth(),
-                        newDate.getFullYear()
-                    );
-                }}
+                onDayClick={handleDayClick}
             />
         </div>
     );
