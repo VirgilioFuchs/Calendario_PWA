@@ -91,7 +91,7 @@ const FooterStrip: React.FC<FooterStripProps> = ({
 
         while (loopDate <= endDate) {
             const y = loopDate.getFullYear();
-            const isHidden = y !== 2026;
+            const isHidden = y !== currentYear;
 
             allDays.push({
                 day: loopDate.getDate(),
@@ -148,35 +148,50 @@ const FooterStrip: React.FC<FooterStripProps> = ({
         const container = scrollRef.current;
         if (!container) return;
 
-        const width = container.clientWidth;
-        const scrollPos = container.scrollLeft;
-        const index = Math.round(scrollPos / width);
+        let index = 0;
+        if (orientation === 'vertical') {
+            const height = container.clientHeight;
+            const scrollPos = container.scrollTop;
+            index = Math.round(scrollPos / height);
+        } else {
+            const width = container.clientWidth;
+            const scrollPos = container.scrollLeft;
+            index = Math.round(scrollPos / width);
+        }
 
         selectDayFromIndex(index);
-    }, [selectDayFromIndex]);
+    }, [selectDayFromIndex, orientation]);
 
     // Usa scrollend se disponível, senão usa scroll normal
     useEffect(() => {
         const container = scrollRef.current;
         if (!container) return;
 
-        // Tenta usar scrollend (mais preciso)
+        const onScrollEnd = () => {
+            if (isScrolling.current) return;
+
+            let index = 0;
+            if (orientation === 'vertical') {
+                index = Math.round(container.scrollTop / container.clientHeight);
+            } else {
+                index = Math.round(container.scrollLeft / container.clientWidth);
+            }
+            selectDayFromIndex(index);
+        };
+
         const supportsScrollEnd = 'onscrollend' in window;
-
         if (supportsScrollEnd) {
-            const onScrollEnd = () => {
-                if (isScrolling.current) return;
-
-                const width = container.clientWidth;
-                const scrollPos = container.scrollLeft;
-                const index = Math.round(scrollPos / width);
-                selectDayFromIndex(index);
-            };
-
             container.addEventListener('scrollend', onScrollEnd);
-            return () => container.removeEventListener('scrollend', onScrollEnd);
+        } else {
+            // Fallback para quando o scroll termina sem o evento oficial
+            container.addEventListener('scroll', handleScroll);
         }
-    }, [selectDayFromIndex]);
+
+        return () => {
+            container.removeEventListener('scrollend', onScrollEnd);
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, [selectDayFromIndex, orientation, handleScroll]);
 
     // Auto-scroll para a semana do dia selecionado
     useEffect(() => {

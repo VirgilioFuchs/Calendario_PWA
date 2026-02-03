@@ -27,8 +27,6 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
     const touchStartY = useRef<number | null>(null);
     const [isHorizontalSwipe, setIsHorizontalSwipe] = useState<boolean | null>(null);
 
-    const baseDate = new Date(currentYear, currentMonthIdx, selectedDay);
-
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         const touch = e.touches[0];
         touchStartX.current = touch.clientX;
@@ -105,19 +103,14 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
             onTouchEnd={handleTouchEnd}
         >
             <DayView
-                currentYear={baseDate.getFullYear()}
-                currentMonthIdx={baseDate.getMonth()}
-                selectedDay={baseDate.getDate()}
+                currentYear={currentYear}
+                currentMonthIdx={currentMonthIdx}
+                selectedDay={selectedDay}
                 onBack={onBack}
                 onEventClick={onEventClick}
                 horizontalMode={horizontalMode}
-                onDayChange={(day) => {
-                    const newDate = new Date(currentYear, currentMonthIdx, day);
-                    onChangeDate(
-                        newDate.getDate(),
-                        newDate.getMonth(),
-                        newDate.getFullYear()
-                    );
+                onDayChange={(day, monthIdx, year)=> {
+                    onChangeDate(day, monthIdx, year);
                 }}
             />
         </div>

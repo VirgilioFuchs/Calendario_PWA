@@ -7,7 +7,6 @@ import clsx from 'clsx';
 // Propriedaes do componente YearView
 interface YearViewProps {
     currentYear: number;
-    // initialMonthIdx: number;
     onMonthClick: (monthIdx: number, coords: { x: number, y: number }) => void;
     isFirstLoad: boolean;
 }
@@ -106,11 +105,8 @@ const MonthCard = React.memo<MonthCardProps>(({
 
                 {/* Dias do mês */}
                 {monthData.days.map(d => {
-                    // ✅ Calcular dayOfWeek sem new Date() - muito mais rápido
                     const dayOfWeek = (monthData.firstDayIdx + d - 1) % 7;
                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-                    // ✅ Marcar dia atual
                     const isToday = isCurrent && d === currentDay;
 
                     return (
@@ -118,9 +114,7 @@ const MonthCard = React.memo<MonthCardProps>(({
                             key={d}
                             className={clsx(
                                 'h-5 w-5 mx-auto rounded-full flex items-center justify-center text-[9px] relative',
-                                // Destaque do dia atual
                                 isToday && 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md',
-                                // Estilos normais
                                 !isToday && isWeekend && 'text-gray-300 font-normal dark:text-zinc-600',
                                 !isToday && !isWeekend && 'text-gray-900 font-bold dark:text-zinc-300'
                             )}
@@ -129,8 +123,6 @@ const MonthCard = React.memo<MonthCardProps>(({
                         </div>
                     );
                 })}
-
-                {/* Dias em branco após o final do mês */}
                 {monthData.trailingBlanks.map(b => (
                     <div key={`trail-${b}`} className="h-5"/>
                 ))}

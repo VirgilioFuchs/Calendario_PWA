@@ -180,13 +180,21 @@ const App: React.FC = () => {
         newMonthIdx: number,
         newYear: number
     ) => {
+        console.log('🟡 handleChangeDate:', {
+            newDay,
+            newMonthIdx,
+            newYear,
+            currentSelectedMonthIdx: selectedMonthIdx,
+            currentSelectedDay: selectedDay
+        });
+
         const targetDate = new Date(newYear, newMonthIdx, newDay);
         const currentDate = new Date(year, selectedMonthIdx, selectedDay);
         if (targetDate.getTime() === currentDate.getTime()) return;
 
         setSelectedDay(newDay);
         if (newMonthIdx !== selectedMonthIdx) setSelectedMonthIdx(newMonthIdx);
-        setYear(newYear);
+        if (newYear !== year) setYear(newYear);
     }
 
     const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
@@ -203,11 +211,23 @@ const App: React.FC = () => {
     };
 
     const handleDaySelect = (monthIdx: number, day: number) => {
+        console.log('🔵 handleDaySelect ANTES:', {
+            monthIdx,
+            day,
+            selectedMonthIdx,
+            selectedDay
+        });
+
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
         setAnimDirection('forward');
         setPreviousNavLevel('month_detail');
         setNavLevel('day_detail');
+
+        console.log('🟢 handleDaySelect DEPOIS:', {
+            monthIdx,
+            day
+        });
     };
 
     const handleBackToMonth = () => {
@@ -242,7 +262,8 @@ const App: React.FC = () => {
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
     const showLegend = navLevel !== 'event_detail' &&
-        !(navLevel === 'day_detail' && orientation === 'landscape');
+        !(navLevel === 'day_detail' && orientation === 'landscape') &&
+        !(navLevel === 'month_detail' && orientation === 'landscape');
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-zinc-950">
@@ -318,17 +339,6 @@ const App: React.FC = () => {
                                             onChangeDate={handleChangeDate}
                                             onEventClick={handleEventSelect}
                                             horizontalMode={true}
-                                        />
-                                    </div>
-
-                                    {/* FooterStrip vertical no lado direito */}
-                                    <div className="w-16 border-l border-gray-200 dark:border-zinc-800 overflow-hidden flex-shrink-0">
-                                        <FooterStrip
-                                            currentYear={year}
-                                            currentMonthIdx={selectedMonthIdx}
-                                            selectedDay={selectedDay}
-                                            onSelectDay={handleChangeDate}
-                                            orientation="vertical"
                                         />
                                     </div>
                                 </div>
