@@ -18,10 +18,9 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const orientation = useOrientation();
     const isLandscape = orientation === 'landscape';
 
-    // Estado para o título fixo (Scroll Spy)
     const [visibleMonthIdx, setVisibleMonthIdx] = useState(monthIdx);
     const months = Array.from({length: 12}, (_, i) => i);
-    const headerOffset = 110; // Espaço reservado para o header fixo
+    const headerOffset = 110;
     const isInitialScroll = useRef(true);
     const today = new Date();
     const currentDay = today.getDate();
@@ -30,6 +29,30 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // ✅ Normalize event type
+    const normalizeEventType = (type: string | boolean | null | undefined): string => {
+        if (!type || typeof type !== 'string') {
+            return 'outros';
+        }
+
+        const tipoLower = type.toLowerCase();
+        const knownTypes = ['trabalho', 'férias', 'feriado', 'festa'];
+
+        if (knownTypes.includes(tipoLower)) {
+            return tipoLower;
+        }
+        return 'outros';
+    };
+
+    const getUniqueTypesForDay = (events: CalendarEvent[]): string[] => {
+        const types = events.map(evt => normalizeEventType(evt.feriado_tipo));
+        return [...new Set(types)].filter(type => type !== 'feriado');
+    };
+
+    const hasHoliday = (events: CalendarEvent[]): boolean => {
+        return events.some(evt => normalizeEventType(evt.feriado_tipo) === 'feriado');
+    };
 
     useEffect(() => {
         const fetchYearEvents = async () => {
@@ -48,13 +71,12 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         fetchYearEvents();
     }, [year]);
 
-// Agrupar eventos por dia
     const eventsByMonthAndDay = useMemo(() => {
         const grouped: Record<number, Record<number, CalendarEvent[]>> = {};
 
         yearEvents.forEach((evt: CalendarEvent) => {
-            const [year, month, day] = evt.feriado_data.split('T')[0].split('-').map(Number);
-            const eventDate = new Date(year, month - 1, day);
+            const [evtYear, month, day] = evt.feriado_data.split('T')[0].split('-').map(Number);
+            const eventDate = new Date(evtYear, month - 1, day);
             const monthNum = eventDate.getMonth();
             const dayNum = eventDate.getDate();
 
@@ -70,10 +92,8 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         return grouped;
     }, [yearEvents]);
 
-
-    // Cores do evento
     const getEventStyle = (type: string) => {
-        const tipoLower = type.toLowerCase()
+        const tipoLower = type.toLowerCase();
         switch (tipoLower) {
             case 'trabalho':
                 return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-700';
@@ -88,28 +108,29 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         }
     };
 
-    // Lógica do Spy Scroll
+    // Scroll Spy
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        // Usar scroll event que funciona melhor em ambas orientações
         const handleScroll = () => {
             if (isInitialScroll.current) return;
 
             const sections = container.querySelectorAll('.month-grid-section');
             const containerRect = container.getBoundingClientRect();
-            const containerTop = containerRect.top;
-            const containerHeight = containerRect.height;
-            const targetPoint = containerTop + containerHeight * 0.3; // 30% do topo
+
+            // ✅ Different detection point for landscape vs portrait
+            const detectionPoint = isLandscape
+                ? containerRect.top + containerRect.height * 0.2  // 20% from top in landscape
+                : containerRect.top + containerRect.height * 0.3; // 30% from top in portrait
 
             let closestIdx = 0;
             let closestDistance = Infinity;
 
             sections.forEach((section) => {
                 const rect = section.getBoundingClientRect();
-                const sectionTop = rect.top;
-                const distance = Math.abs(targetPoint - sectionTop);
+                const sectionMiddle = rect.top + rect.height / 2;
+                const distance = Math.abs(detectionPoint - sectionMiddle);
 
                 if (distance < closestDistance) {
                     closestDistance = distance;
@@ -123,7 +144,6 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
         container.addEventListener('scroll', handleScroll, {passive: true});
 
-        // Também dispara uma vez após o scroll inicial terminar
         const checkAfterInit = setTimeout(() => {
             if (!isInitialScroll.current) {
                 handleScroll();
@@ -134,10 +154,8 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             container.removeEventListener('scroll', handleScroll);
             clearTimeout(checkAfterInit);
         };
-    }, []);
+    }, [isLandscape, containerRef]);
 
-
-    // Scroll inicial para o mês selecionado
     useEffect(() => {
         setVisibleMonthIdx(monthIdx);
         isInitialScroll.current = true;
@@ -160,22 +178,6 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         const rect = e.currentTarget.getBoundingClientRect();
         onDayClick(mIdx, d, rect);
     };
-
-    // const handleRefresh = async () => {
-    //     setLoading(true);
-    //     try {
-    //         const startDate = `${year}-01-01`;
-    //         const endDate = `${year}-12-31`;
-    //         const data = await eventsApi.forceRefresh(startDate, endDate);
-    //         setYearEvents(data);
-    //         console.log('Cache Atualizado');
-    //     } catch (err) {
-    //         console.error('Erro ao atualizar:', err);
-    //         setError(err instanceof Error ? err.message : 'Erro ao atualizar');
-    //     } finally {
-    //          setLoading(false);
-    //     }
-    // }
 
     const CalendarContent = () => (
         <div
@@ -215,6 +217,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                 const visibleEvents = allEvents.slice(0, 2);
                                 const remainingEvents = allEvents.length - 2;
 
+                                // ✅ Get unique types and check for holiday
+                                const uniqueTypes = getUniqueTypesForDay(allEvents);
+                                const dayHasFeriado = hasHoliday(allEvents);
+
                                 return (
                                     <div
                                         key={d}
@@ -237,32 +243,36 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                 font-sans leading-none flex items-center justify-center rounded-full
                                                 ${isLandscape ? 'w-5 h-5 text-xs' : 'w-7 h-7 text-sm'}
                                                 ${isToday
-                                                    ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
-                                                    : isWeekend ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-300'
-                                                }`}>
+                                                ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                                : dayHasFeriado
+                                                    ? 'text-red-500 dark:text-red-400 font-semibold'
+                                                    : isWeekend
+                                                        ? 'text-gray-300 dark:text-zinc-600'
+                                                        : 'text-gray-900 dark:text-zinc-300'
+                                            }`}>
                                                     {d}
                                             </span>
                                         </div>
 
-                                        {/* LANDSCAPE: Bolinhas de eventos */}
-                                        {isLandscape && allEvents.length > 0 && (
+                                        {/* ✅ LANDSCAPE: One dot per unique event type */}
+                                        {isLandscape && uniqueTypes.length > 0 && (
                                             <div className="flex flex-row gap-1 justify-center flex-wrap max-w-full">
-                                                {allEvents.slice(0, 4).map((evt, idx) => (
+                                                {uniqueTypes.slice(0, 3).map((type, idx) => (
                                                     <div
-                                                        key={`${evt.feriado_id}-${idx}`}
-                                                        className={`w-1.5 h-1.5 rounded-full ${getEventStyle(evt.feriado_tipo)}`}
-                                                        title={evt.feriado_titulo}
+                                                        key={idx}
+                                                        className={`w-1.5 h-1.5 rounded-full ${getEventStyle(type)}`}
+                                                        title={type}
                                                     />
                                                 ))}
-                                                {allEvents.length > 4 && (
+                                                {uniqueTypes.length > 3 && (
                                                     <span className="text-[6px] font-bold text-gray-400 dark:text-zinc-500 leading-none">
-                                                    +{allEvents.length - 4}
-                                                </span>
+                                                        +{uniqueTypes.length - 3}
+                                                    </span>
                                                 )}
                                             </div>
                                         )}
 
-                                        {/* PORTRAIT: Cards de eventos (original) */}
+                                        {/* PORTRAIT: Event cards */}
                                         {!isLandscape && (
                                             <div className="mt-auto w-full px-0.5 pb-3.5 flex flex-col gap-[1px]">
                                                 <div className="flex flex-col gap-[2px] w-full">
@@ -280,9 +290,9 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
                                                 {remainingEvents > 0 && (
                                                     <div className="w-full text-center">
-                                                    <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400">
-                                                        +{remainingEvents}
-                                                    </span>
+                                                        <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400">
+                                                            +{remainingEvents}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
@@ -299,7 +309,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
     return (
         <div className="flex-1 flex flex-col bg-white h-full relative z-50 dark:bg-zinc-950 transition-colors">
-            {/* HEADER FIXO */}
+            {/* HEADER */}
             <div
                 className="z-30 shadow-sm relative transition-all duration-300
                 bg-white/95 backdrop-blur-sm border-b border-gray-300
@@ -324,11 +334,13 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                     </button>
                 </div>
 
-                {/*<div className="px-4 pb-1">*/}
-                {/*    <h1 className="text-3xl font-extrabold text-black dark:text-white tracking-tight">*/}
-                {/*        {MONTH_NAMES[visibleMonthIdx]}*/}
-                {/*    </h1>*/}
-                {/*</div>*/}
+                {!isLandscape && (
+                    <div className="px-4 pb-1">
+                        <h1 className="text-3xl font-extrabold text-black dark:text-white tracking-tight">
+                            {MONTH_NAMES[visibleMonthIdx]}
+                        </h1>
+                    </div>
+                )}
 
                 {!isLandscape && (
                     <div className="grid grid-cols-7 gap-0 px-0 pb-1">
@@ -345,7 +357,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                 )}
             </div>
 
-            {/* Loading indicator */}
+            {/* Loading */}
             {loading && (
                 <div
                     className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg text-sm">
@@ -353,7 +365,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                 </div>
             )}
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
                 <div
                     className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
@@ -361,14 +373,13 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                 </div>
             )}
 
-            {/* LAYOUT PRINCIPAL */}
+            {/* MAIN LAYOUT */}
             {isLandscape ? (
-                // MODO LANDSCAPE: 60% calendário | 40% painel lateral
                 <div className="flex-1 flex flex-row overflow-hidden">
-                    {/* 60% - Calendário */}
+                    {/* 60% - Calendar */}
                     <div
                         className="w-[60%] flex flex-col overflow-hidden border-r border-gray-200 dark:border-zinc-800">
-                        <div className="grid grid-cols-7 gap-0 px-0 pb-1">
+                        <div className="grid grid-cols-7 gap-0 px-0 pb-1 border-b border-gray-200 dark:border-zinc-800">
                             {WEEK_DAYS_ABREVIATED.map((d, idx) => (
                                 <div
                                     key={d}
@@ -382,17 +393,24 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                         <CalendarContent/>
                     </div>
 
-                    {/* 40% - Painel Lateral (vazio por enquanto) */}
+                    {/* 40% - Side Panel */}
                     <div className="w-[40%] flex flex-col overflow-hidden bg-gray-50 dark:bg-zinc-900">
-                        <div className="flex-1 flex items-center justify-center">
-                            <p className="text-gray-400 dark:text-zinc-500 text-sm">
+                        {/* ✅ Title at TOP of side panel */}
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 text-center">
+                            <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight transition-all duration-300">
+                                {MONTH_NAMES[visibleMonthIdx]}
+                            </h1>
+                        </div>
+
+                        {/* ✅ Content area */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <p className="text-gray-400 dark:text-zinc-500 text-sm text-center">
                                 Painel lateral
                             </p>
                         </div>
                     </div>
                 </div>
             ) : (
-                // MODO PORTRAIT: Layout normal
                 <CalendarContent/>
             )}
         </div>

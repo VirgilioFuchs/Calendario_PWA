@@ -538,14 +538,14 @@ const DayView: React.FC<DayViewProps> = ({
                                                                             className={`
                                                                                 flex items-center justify-center text-xs font-medium transition-all
                                                                                 ${isSelected
-                                                                                    ? 'w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
+                                                                                    ? 'w-4 h-4 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
                                                                                     : isToday
-                                                                                        ? 'w-7 h-7 rounded-full bg-gray-200 text-gray-900 dark:bg-zinc-700 dark:text-zinc-100 font-semibold'
-                                                                                    : dayHasFeriado
-                                                                                        ? 'text-red-500 dark:text-red-400 font-semibold'
-                                                                                        : isWeekend
-                                                                                            ? 'text-gray-400 dark:text-zinc-500'
-                                                                                            : 'text-gray-700 dark:text-zinc-300'
+                                                                                        ? 'w-4 h-4 rounded-full bg-gray-200 text-gray-900 dark:bg-zinc-700 dark:text-zinc-100 font-semibold'
+                                                                                        : dayHasFeriado
+                                                                                            ? 'text-red-500 dark:text-red-400 font-semibold'
+                                                                                            : isWeekend
+                                                                                                ? 'text-gray-400 dark:text-zinc-500'
+                                                                                                : 'text-gray-700 dark:text-zinc-300'
                                                                                 }
                                                                             `}
                                                                         >

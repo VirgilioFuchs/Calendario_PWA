@@ -201,7 +201,7 @@ const App: React.FC = () => {
         isFirstLoad.current = false;
 
         if (yearViewRef.current) {
-            yearViewScrollRef.current = yearViewRef.current.getScrollTop();
+            yearViewScrollRef.current = yearViewRef.current.getScrollPosition();
         }
 
         setZoomOrigin(coords);
@@ -242,7 +242,7 @@ const App: React.FC = () => {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 if (yearViewRef.current && yearViewScrollRef.current > 0) {
-                    yearViewRef.current.setScrollTop(yearViewScrollRef.current)
+                    yearViewRef.current.setScrollPosition(yearViewScrollRef.current)
                 }
             });
         });

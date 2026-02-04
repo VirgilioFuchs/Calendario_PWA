@@ -15,15 +15,19 @@ interface MonthCardProps {
     mIdx: number;
     currentYear: number;
     isFirstLoad: boolean;
+    isLandscape: boolean;
+    cardStyle?: React.CSSProperties;
     onCardClick: (e: React.MouseEvent<HTMLDivElement>, mIdx: number) => void;
     setCardRef: (el: HTMLDivElement | null, idx: number) => void;
 }
 
-// ===== COMPONENTE MONTHCARD (MEMOIZADO) =====
+// ===== COMPONENTE MONTHCARD (MEMORIZADO) =====
 const MonthCard = React.memo<MonthCardProps>(({
                                                   mIdx,
                                                   currentYear,
                                                   isFirstLoad,
+                                                  isLandscape,
+                                                  cardStyle,
                                                   onCardClick,
                                                   setCardRef
                                               }) => {
@@ -45,7 +49,7 @@ const MonthCard = React.memo<MonthCardProps>(({
     const isCurrent = mIdx === today.getMonth() && currentYear === today.getFullYear();
     const currentDay = today.getDate();
 
-    // ✅ Headers memoizados
+    // ✅ Headers memorizados
     const weekDayHeaders = useMemo(() =>
             WEEK_DAYS.map((d, i) => ({
                 char: d.charAt(0),
@@ -60,16 +64,19 @@ const MonthCard = React.memo<MonthCardProps>(({
             data-month-name={`${MONTH_NAMES[mIdx]} ${currentYear}`}
             onClick={(e) => onCardClick(e, mIdx)}
             className={clsx(
-                'rounded-xl p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col',
+                'rounded-xl shadow-sm active:scale-[0.98] transition-transform cursor-pointer flex flex-col',
                 'bg-white border border-gray-200 hover:border-black/20',
                 'dark:bg-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600',
                 isFirstLoad && `animate-fade-in-scale stagger-${mIdx + 1}`,
-                isCurrent && 'ring-2 ring-gray-900 dark:ring-blue-50'
+                isCurrent && 'ring-2 ring-gray-900 dark:ring-blue-50',
+                isLandscape && 'flex-shrink-0',
+                isLandscape ? 'p-4' : 'p-2'
+
             )}
-            style={isFirstLoad ? {
-                opacity: 0,
-                animationFillMode: 'forwards'
-            } : undefined}
+            style={{
+                ...(isFirstLoad ? { opacity: 0, animationFillMode: 'forwards' } : {}),
+                ...cardStyle
+            }}
         >
             {/* Título do Mês Centralizado */}
             <div className="text-center mb-2">
@@ -82,16 +89,26 @@ const MonthCard = React.memo<MonthCardProps>(({
             </div>
 
             {/* Grid de Dias Compacto (Sempre 6 linhas visuais) */}
-            <div className="grid grid-cols-7 gap-y-1 gap-x-0.5 pointer-events-none flex-1 content-start">
+            <div
+                className={clsx(
+                "grid grid-cols-7 pointer-events-none flex-1 min-h-0",
+                isLandscape ? "gap-x-2" : "gap-x-0.5"
+            )}
+                 style={{
+                     // ✅ Force exactly 7 rows that distribute evenly
+                     gridTemplateRows: 'repeat(7, 1fr)'
+                 }}
+            >
                 {/* Headers da Semana */}
                 {weekDayHeaders.map((day, i) => (
                     <div
                         key={i}
                         className={clsx(
-                            'text-center text-[8px] font-bold',
+                            'text-center font-bold',
                             day.isWeekend
                                 ? 'text-gray-300 dark:text-zinc-600'
-                                : 'text-gray-400 dark:text-zinc-500'
+                                : 'text-gray-400 dark:text-zinc-500',
+                            isLandscape ? 'text-xs' : 'text-[8px]'
                         )}
                     >
                         {day.char}
@@ -113,13 +130,22 @@ const MonthCard = React.memo<MonthCardProps>(({
                         <div
                             key={d}
                             className={clsx(
-                                'h-5 w-5 mx-auto rounded-full flex items-center justify-center text-[9px] relative',
-                                isToday && 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md',
-                                !isToday && isWeekend && 'text-gray-300 font-normal dark:text-zinc-600',
-                                !isToday && !isWeekend && 'text-gray-900 font-bold dark:text-zinc-300'
+                                'flex items-center justify-center',
+                                isLandscape ? 'text-sm' : 'text-[10px]'
                             )}
                         >
-                            {d}
+                            <span
+                                className={clsx(
+                                    'rounded-full flex items-center justify-center aspect-square',
+                                    // ✅ Responsive sizes using aspect-square
+                                    isLandscape ? 'w-7 h-7 text-sm' : 'w-5 h-5 text-[10px]',
+                                    isToday && 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md',
+                                    !isToday && isWeekend && 'text-gray-300 font-normal dark:text-zinc-600',
+                                    !isToday && !isWeekend && 'text-gray-900 font-bold dark:text-zinc-300'
+                                )}
+                            >
+                                {d}
+                            </span>
                         </div>
                     );
                 })}
@@ -134,8 +160,8 @@ const MonthCard = React.memo<MonthCardProps>(({
 MonthCard.displayName = 'MonthCard';
 
 export interface YearViewHandle {
-    getScrollTop: () => number;
-    setScrollTop: (value: number) => void;
+    getScrollPosition: () => number;
+    setScrollPosition: (value: number) => void;
 }
 
 // COMPONENTE PRINCIPAL YEARVIEW
@@ -152,19 +178,25 @@ const YearView = forwardRef<YearViewHandle, YearViewProps>((
 
     const monthCardsRef = useRef<(HTMLDivElement | null)[]>([]);
     const months = useMemo(() => Array.from({length: 12}, (_, i) => i), []);
+    const isLandscape = orientation === 'landscape';
 
     useImperativeHandle(ref, () => ({
-        getScrollTop: () => {
+        getScrollPosition: () => {
             const element = containerRef.current;
-            return element?.scrollTop || 0;
+            if(!element) return 0;
+            return isLandscape ? element.scrollLeft : element.scrollTop;
         },
-        setScrollTop: (value: number) => {
+        setScrollPosition: (value: number) => {
             const element = containerRef.current;
             if (element) {
-                element.scrollTop = value;
+                if(isLandscape) {
+                    element.scrollLeft = value;
+                } else {
+                    element.scrollTop = value;
+                }
             }
         }
-    }), [containerRef]);
+    }), [containerRef, isLandscape]);
 
     // Função de clique no card
     const handleCardClick = useCallback((e: React.MouseEvent<HTMLDivElement>, mIdx: number) => {
@@ -186,43 +218,46 @@ const YearView = forwardRef<YearViewHandle, YearViewProps>((
     const containerClasses = clsx(
         'flex-1 overflow-y-auto scroll-smooth h-full origin-top-left gpu-accelerated',
         'bg-gray-50 dark:bg-zinc-950',
-        orientation === 'portrait' ? 'pt-6 px-3 pb-5' : 'pt-4 px-6 pb-4'
+        isLandscape
+        ? 'overflow-x-auto overflow-y-hidden p-2'
+        : 'overflow-y-auto overflow-x-hidden pt-4 px-2 pb-4'
     );
 
-    const gridClasses = clsx(
-        'grid gap-3',
-        orientation === 'portrait' ? 'grid-cols-2' : 'grid-cols-3'
-    );
+    const landscapeCardStyle: React.CSSProperties = {
+        minWidth: 'calc((100% - 2rem) / 3)',
+        width: 'calc((100% - 2rem) / 3)',
+        height: '100%',
+        minHeight: 0
+    };
 
     return (
         <div ref={containerRef} className={containerClasses}>
-            {/* Grid com linhas divisórias a cada 3 meses */}
-            {orientation === 'landscape' ? (
-                <div className="space-y-8">
-                    {[0, 3, 6, 9].map(startIdx => (
-                        <div className={gridClasses}>
-                            {months.slice(startIdx, startIdx + 3).map((mIdx) => (
-                                <MonthCard
-                                    key={mIdx}
-                                    mIdx={mIdx}
-                                    currentYear={currentYear}
-                                    isFirstLoad={isFirstLoad}
-                                    onCardClick={handleCardClick}
-                                    setCardRef={setMonthCardRef}
-                                />
-                            ))}
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                /* ✅ PORTRAIT: Grid tradicional 2 colunas */
-                <div className={gridClasses}>
+            {isLandscape ? (
+                // ✅ LANDSCAPE: Simple horizontal scroll, 3 months visible
+                <div className="flex flex-row gap-4 h-full">
                     {months.map((mIdx) => (
                         <MonthCard
                             key={mIdx}
                             mIdx={mIdx}
                             currentYear={currentYear}
                             isFirstLoad={isFirstLoad}
+                            isLandscape={isLandscape}
+                            cardStyle={landscapeCardStyle}
+                            onCardClick={handleCardClick}
+                            setCardRef={setMonthCardRef}
+                        />
+                    ))}
+                </div>
+            ) : (
+                // ✅ PORTRAIT: Vertical scroll with 2-column grid
+                <div className="grid grid-cols-2 gap-3">
+                    {months.map((mIdx) => (
+                        <MonthCard
+                            key={mIdx}
+                            mIdx={mIdx}
+                            currentYear={currentYear}
+                            isFirstLoad={isFirstLoad}
+                            isLandscape={isLandscape}
                             onCardClick={handleCardClick}
                             setCardRef={setMonthCardRef}
                         />
