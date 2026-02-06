@@ -1,9 +1,24 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {WEEK_DAYS, MONTH_NAMES, WEEK_DAYS_ABREVIATED, type CalendarEvent} from '../types';
 import {eventsApi} from "../services/apiCache.ts";
-import {EVENT_LEGEND} from './FooterConfig';
+import {EVENT_LEGEND} from '../constants/eventLegend.ts';
 import {useDragScroll} from '../hooks/useDragScroll';
 import '../App.css';
+import {
+    getEventStyle,
+    getEventRingColor,
+    getDotColor,
+    getUniqueTypesForDay,
+    hasHoliday
+} from "../utils/eventHelpers.ts";
+import {
+    timeStringToDecimal,
+    formatDecimalTime,
+    getCalendarGridData,
+    isToday,
+    isWeekend,
+    getDayOfWeekInGrid,
+} from "../utils/dateHelpers.ts";
 
 interface DayViewProps {
     currentYear: number;
@@ -16,12 +31,6 @@ interface DayViewProps {
 }
 
 const HOUR_HEIGHT = 60;
-
-const timeStringToDecimal = (timeStr: string | null): number => {
-    if (!timeStr) return 8;
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours + (minutes / 60);
-};
 
 //Campo de vizualização de dias
 const DayView: React.FC<DayViewProps> = ({
@@ -45,21 +54,6 @@ const DayView: React.FC<DayViewProps> = ({
     const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const panelScrollRef = useRef<HTMLDivElement>(null);
 
-    // Qualquer evento fora dos descritos vira outros
-    const normalizeEventType = (type: string | boolean | null | undefined): string => {
-        // Garante que type seja uma string válida
-        if (!type || typeof type !== 'string') {
-            return 'outros';
-        }
-
-        const tipoLower = type.toLowerCase();
-        const knownTypes = ['trabalho', 'férias', 'feriado', 'festa'];
-
-        if (knownTypes.includes(tipoLower)) {
-            return tipoLower;
-        }
-        return 'outros';
-    };
 
     // Eventos dia inteiro
     const allDayEvents = useMemo(() =>
@@ -72,32 +66,6 @@ const DayView: React.FC<DayViewProps> = ({
             events.filter(evt => !evt.feriado_dia_inteiro),
         [events]
     );
-
-    const daysInMonth = useMemo(() => {
-        const date = new Date(currentYear, currentMonthIdx + 1, 0);
-        const totalDays = date.getDate();
-        return Array.from({length: totalDays}, (_, i) => i + 1);
-    }, [currentYear, currentMonthIdx]);
-
-    const getEventsForDay = (day: number): CalendarEvent[] => {
-        return monthEvents.filter(evt => {
-            const [year, month, dayOfMonth] = evt.feriado_data.split('T')[0].split('-').map(Number);
-            return dayOfMonth === day &&
-                (month - 1) === currentMonthIdx &&
-                year === currentYear;
-        });
-    };
-
-    const getUniqueTypesForDay = (day:number): string[] => {
-        const dayEvents  = getEventsForDay(day);
-        const types = dayEvents.map(evt=> normalizeEventType(evt.feriado_tipo));
-        return  [...new Set(types)].filter(type => type !== 'feriado');
-    }
-
-    const hasHoliday = (day:number): boolean => {
-        const dayEvents = getEventsForDay(day);
-        return dayEvents.some(evt => normalizeEventType(evt.feriado_tipo) === 'feriado');
-    };
 
     // Eventos da timeline (do dia)
     useEffect(() => {
@@ -140,58 +108,6 @@ const DayView: React.FC<DayViewProps> = ({
             });
         }
     }, [activeTab, horizontalMode]);
-
-    const getDotColor = (type: string): string => {
-        const tipoLower = type.toLowerCase();
-        switch (tipoLower) {
-            case 'trabalho':
-                return 'bg-gray-800 dark:bg-zinc-500';
-            case 'férias':
-                return 'bg-green-800 dark:bg-green-500';
-            case 'festa':
-                return 'bg-purple-800 dark:bg-purple-500';
-            default:
-                return 'bg-blue-800 dark:bg-blue-500';
-        }
-    };
-
-    const getCalendarEventStyle = (type: string) => {
-        const tipoLower = normalizeEventType(type);
-        switch (tipoLower) {
-            case 'trabalho':
-                return 'bg-gray-100 text-gray-700 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500';
-            case 'férias':
-                return 'bg-green-100 text-green-800 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500';
-            case 'feriado':
-                return 'bg-red-100 text-red-800 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500';
-            case 'festa':
-                return 'bg-purple-100 text-purple-800 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500';
-            default:
-                return 'bg-blue-50 text-blue-800 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500';
-        }
-    };
-
-    const getEventRingColor = (type: string) => {
-        const tipoLower = normalizeEventType(type);
-        switch (tipoLower) {
-            case 'trabalho':
-                return 'ring-gray-500 dark:ring-zinc-500';
-            case 'férias':
-                return 'ring-green-600 dark:ring-green-500';
-            case 'feriado':
-                return 'ring-red-500 dark:ring-red-500';
-            case 'festa':
-                return 'ring-purple-500 dark:ring-purple-500';
-            default:
-                return 'ring-blue-500 dark:ring-blue-500';
-        }
-    };
-
-    const formatTime = (decimalTime: number) => {
-        const h = Math.floor(decimalTime);
-        const m = Math.round((decimalTime - h) * 60);
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    };
 
     const handleEventClickInternal = (evt: CalendarEvent) => {
         if (horizontalMode) {
@@ -290,7 +206,7 @@ const DayView: React.FC<DayViewProps> = ({
                                         className={`
                                         px-2 py-1 rounded text-xs font-medium cursor-pointer
                                         hover:brightness-95 transition-all
-                                        ${getCalendarEventStyle(evt.feriado_tipo)}
+                                        ${getEventStyle(evt.feriado_tipo)}
                                     `}
                                     >
                                     {evt.feriado_titulo}
@@ -331,7 +247,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                     onClick={() => handleEventClickInternal(evt)}
                                                     className={`px-2 py-1 rounded text-xs font-medium cursor-pointer
                                                     hover:brightness-95 transition-all border-l-2
-                                                    ${getCalendarEventStyle(evt.feriado_tipo)}
+                                                    ${getEventStyle(evt.feriado_tipo)}
                                                     ${selectedEventId === evt.feriado_id ? `ring-1 ${getEventRingColor(evt.feriado_tipo)}` : ''}
                                                 `}
                                                 >
@@ -379,8 +295,8 @@ const DayView: React.FC<DayViewProps> = ({
                             const topPosition = (startHour - hours[0]) * HOUR_HEIGHT;
                             const eventHeight = duration * HOUR_HEIGHT;
                             const isShortEvent = duration <= 1;
-                            const startTime = formatTime(startHour);
-                            const endTime = formatTime(startHour + duration);
+                            const startTime = formatDecimalTime(startHour);
+                            const endTime = formatDecimalTime(startHour + duration);
 
                             return (
                                 <div
@@ -395,7 +311,7 @@ const DayView: React.FC<DayViewProps> = ({
                                     onClick={() => handleEventClickInternal(evt)}
                                     className={`absolute left-14 right-0 rounded-xl border-l-4 shadow-sm overflow-hidden cursor-pointer 
                                         hover:brightness-95 active:scale-[0.98] transition-transform z-10
-                                        ${getCalendarEventStyle(evt.feriado_tipo)}
+                                        ${getEventStyle(evt.feriado_tipo)}
                                         ${selectedEventId === evt.feriado_id ? `ring-2 ${getEventRingColor(evt.feriado_tipo)} brightness-110` : ''}
                                         ${isShortEvent
                                         ? 'flex flex-row items-start justify-between p-2 px-3'
@@ -494,16 +410,12 @@ const DayView: React.FC<DayViewProps> = ({
                                             {/* Grid de dias */}
                                             <div className="grid grid-cols-7 gap-0.5">
                                                 {(() => {
-                                                    const firstDayIdx = new Date(currentYear, currentMonthIdx, 1).getDay();
-                                                    const blanks = Array.from({ length: firstDayIdx }, (_, i) => i);
-                                                    const totalSlots = 35;
-                                                    const usedSlots = blanks.length + daysInMonth.length;
-                                                    const trailingBlanks = Array.from({ length: totalSlots - usedSlots }, (_, i) => i);
+                                                    const gridData = getCalendarGridData(currentYear, currentMonthIdx, 35);
 
                                                     return (
                                                         <>
                                                             {/* Dias em branco antes do início do mês */}
-                                                            {blanks.map(b => (
+                                                            {gridData.leadingBlanks.map(b => (
                                                                 <div
                                                                     key={`blank-start-${b}`}
                                                                     className="aspect-square"
@@ -511,24 +423,22 @@ const DayView: React.FC<DayViewProps> = ({
                                                             ))}
 
                                                             {/* Dias do mês */}
-                                                            {daysInMonth.map((day) => {
-                                                                const dayOfWeek = (firstDayIdx + day - 1) % 7;
-                                                                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                                                            {gridData.days.map((day) => {
+                                                                const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, day);
+                                                                const isDayWeekend = isWeekend(dayOfWeek)
                                                                 const isSelected = day === selectedDay;
-                                                                const isToday = day === new Date().getDate() &&
-                                                                    currentMonthIdx === new Date().getMonth() &&
-                                                                    currentYear === new Date().getFullYear();
-                                                                const dayHasFeriado = hasHoliday(day);
-                                                                const uniqueTypes = getUniqueTypesForDay(day);
+                                                                const isTodayDay = isToday(currentYear, currentMonthIdx, day);
+                                                                const dayEvents = monthEvents.filter(evt => {
+                                                                    const eventDate = new Date(evt.feriado_data);
+                                                                    return eventDate.getDate() === day;
+                                                                });
+                                                                const dayHasFeriado = hasHoliday(dayEvents);
+                                                                const uniqueTypes = getUniqueTypesForDay(dayEvents);
 
                                                                 return (
                                                                     <button
                                                                         key={day}
-                                                                        onClick={() => {
-                                                                            if (onDayChange) {
-                                                                                onDayChange(day, currentMonthIdx, currentYear);
-                                                                            }
-                                                                        }}
+                                                                        onClick={() => onDayChange?.(day, currentMonthIdx, currentYear)}
                                                                         className={`
                                                                             aspect-square flex flex-col items-center justify-center transition-all duration-200 relative
                                                                             ${!isSelected ? 'active:scale-95' : ''}
@@ -539,11 +449,11 @@ const DayView: React.FC<DayViewProps> = ({
                                                                                 flex items-center justify-center text-xs font-medium transition-all
                                                                                 ${isSelected
                                                                                     ? 'w-4 h-4 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
-                                                                                    : isToday
+                                                                                    : isTodayDay
                                                                                         ? 'w-4 h-4 rounded-full bg-gray-200 text-gray-900 dark:bg-zinc-700 dark:text-zinc-100 font-semibold'
                                                                                         : dayHasFeriado
                                                                                             ? 'text-red-500 dark:text-red-400 font-semibold'
-                                                                                            : isWeekend
+                                                                                            : isDayWeekend
                                                                                                 ? 'text-gray-400 dark:text-zinc-500'
                                                                                                 : 'text-gray-700 dark:text-zinc-300'
                                                                                 }
@@ -566,7 +476,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                             })}
 
                                                             {/* Dias em branco após o final do mês */}
-                                                            {trailingBlanks.map(b => (
+                                                            {gridData.trailingBlanks.map(b => (
                                                                 <div
                                                                     key={`blank-end-${b}`}
                                                                     className="aspect-square"
@@ -599,7 +509,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                         </button>
 
                                                         <div
-                                                            className={`rounded-xl p-4 border-l-4 ${getCalendarEventStyle(selectedEvent.feriado_tipo)}`}>
+                                                            className={`rounded-xl p-4 border-l-4 ${getEventStyle(selectedEvent.feriado_tipo)}`}>
                                                             <div className="space-y-3">
                                                                 <div>
                                                                     <h3 className="text-lg font-bold leading-tight">
@@ -677,7 +587,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                                 key={evt.feriado_id}
                                                                 onClick={() => handleEventClickInternal(evt)}
                                                                 className={`rounded-lg p-2.5 cursor-pointer hover:brightness-95 transition-all border-l-4
-                                                                    ${getCalendarEventStyle(evt.feriado_tipo)}
+                                                                    ${getEventStyle(evt.feriado_tipo)}
                                                                     ${selectedEventId === evt.feriado_id ? `ring-2 ${getEventRingColor(evt.feriado_tipo)}` : ''}
                                                                     `}
                                                             >
@@ -688,8 +598,8 @@ const DayView: React.FC<DayViewProps> = ({
                                                                         'Dia Inteiro'
                                                                     ) : evt.feriado_inicio ? (
                                                                         <>
-                                                                            {formatTime(timeStringToDecimal(evt.feriado_inicio))}
-                                                                            {evt.feriado_fim && ` - ${formatTime(timeStringToDecimal(evt.feriado_fim))}`}
+                                                                            {formatDecimalTime(timeStringToDecimal(evt.feriado_inicio))}
+                                                                            {evt.feriado_fim && ` - ${formatDecimalTime(timeStringToDecimal(evt.feriado_fim))}`}
                                                                         </>
                                                                     ) : null}
                                                                 </div>

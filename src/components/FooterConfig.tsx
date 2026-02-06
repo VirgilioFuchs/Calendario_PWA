@@ -1,13 +1,9 @@
 import React, {useRef, useState } from "react";
+import {EVENT_LEGEND} from "../constants/eventLegend.ts";
 
-// Lista de Legendas
-export const EVENT_LEGEND = [
-    { label: 'Trabalho', class: 'bg-gray-100 text-gray-700 border-l-4 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500' },
-    { label: 'Férias',   class: 'bg-green-100 text-green-800 border-l-4 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500' },
-    { label: 'Feriado',  class: 'bg-red-100 text-red-800 border-l-4 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500' },
-    { label: 'Festa',    class: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500' },
-    { label: 'Outros',    class: 'bg-blue-50 text-blue-800 border-l-4 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500' },
-]
+const HEADER_HEIGHT = 48;
+const DRAG_THRESHOLD = 65;
+const MIN_DRAG_DISTANCE = 5;
 
 interface FooterConfigProps {
     currentTheme?: string;
@@ -18,12 +14,11 @@ const FooterConfig: React.FC<FooterConfigProps> = ({ currentTheme, onToggleTheme
     // ANIMAÇÕES
     const [isExpanded, setIsExpanded] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
+
     const sheetRef = useRef<HTMLDivElement>(null);
     const backdropRef = useRef<HTMLDivElement>(null);
     const startY = useRef<number>(0);
     const dragOffsetY = useRef<number>(0);
-
-    const HEADER_HEIGHT = 48; // Altura do cabeçalho em pixels
 
     const onTouchStart = (e: React.TouchEvent) => {
         setIsDragging(true)
@@ -39,33 +34,24 @@ const FooterConfig: React.FC<FooterConfigProps> = ({ currentTheme, onToggleTheme
         const sheetHeight = sheetRef.current.offsetHeight;
         const maxTravelDistance = sheetHeight - HEADER_HEIGHT;
 
-        if (isExpanded) {
-            dragOffsetY.current = Math.max(0, Math.min(delta, maxTravelDistance));
-        } else {
-            dragOffsetY.current = Math.min(0, Math.max(delta, -maxTravelDistance));
-        }
+        dragOffsetY.current = isExpanded
+            ? Math.max(0, Math.min(delta, maxTravelDistance))
+            : Math.min(0, Math.max(delta, -maxTravelDistance));
 
-        if (sheetRef.current) {
-            sheetRef.current.style.transform = isExpanded
-                ? `translateY(${dragOffsetY.current}px)`
-                : `translateY(calc(100% - ${HEADER_HEIGHT}px + ${dragOffsetY.current}px))`;
-
-            sheetRef.current.style.transition = 'none';
-        }
+        sheetRef.current.style.transform = isExpanded
+            ? `translateY(${dragOffsetY.current}px)`
+            : `translateY(calc(100% - ${HEADER_HEIGHT}px + ${dragOffsetY.current}px))`;
+        sheetRef.current.style.transition = 'none';
 
         if (backdropRef.current) {
-            let progress = 0;
+            const progress = isExpanded
+                ? 1 - (dragOffsetY.current / maxTravelDistance)
+                : Math.abs(dragOffsetY.current) / maxTravelDistance;
 
-            if (isExpanded) {
-                progress = 1 - (dragOffsetY.current / maxTravelDistance);
-            } else {
-                progress = Math.abs(dragOffsetY.current) / maxTravelDistance;
-            }
+            const clampedProgress = Math.max(0, Math.min(1, progress));
 
-            progress = Math.max(0, Math.min(1, progress));
-
-            backdropRef.current.style.opacity = `${progress}`;
-            backdropRef.current.style.backdropFilter = `blur(${progress * 4}px)`;
+            backdropRef.current.style.opacity = `${clampedProgress}`;
+            backdropRef.current.style.backdropFilter = `blur(${clampedProgress * 4}px)`;
             backdropRef.current.style.transition = 'none';
         }
     };
@@ -75,13 +61,11 @@ const FooterConfig: React.FC<FooterConfigProps> = ({ currentTheme, onToggleTheme
 
         if (!sheetRef.current) return;
 
-        const threshold = 65;
         let nextState = isExpanded;
-
-        if (isExpanded) {
-            if (dragOffsetY.current > threshold) nextState = false;
-        } else {
-            if (dragOffsetY.current < -threshold) nextState = true;
+        if (isExpanded && dragOffsetY.current > DRAG_THRESHOLD) {
+            nextState = false;
+        } else if (!isExpanded && dragOffsetY.current < -DRAG_THRESHOLD) {
+            nextState = true;
         }
 
         setIsExpanded(nextState);
@@ -99,9 +83,14 @@ const FooterConfig: React.FC<FooterConfigProps> = ({ currentTheme, onToggleTheme
 
     // Se arrastou pouco ele não abre (proteção extra)
     const handleHeaderClick = () => {
-        if (Math.abs(dragOffsetY.current) < 5) {
-            setIsExpanded(!isExpanded)
+        if (Math.abs(dragOffsetY.current) < MIN_DRAG_DISTANCE) {
+            setIsExpanded(prev => !prev);
         }
+    };
+
+    const handleThemeToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleTheme?.();
     };
 
     return (
@@ -154,10 +143,7 @@ const FooterConfig: React.FC<FooterConfigProps> = ({ currentTheme, onToggleTheme
                         {/* Botão de troca de tema */}
                         {onToggleTheme && (
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleTheme();
-                                }}
+                                onClick={handleThemeToggle}
                                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-900 dark:text-zinc-100 transition-colors"
                                 title="Alternar Tema"
                             >

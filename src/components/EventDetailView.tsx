@@ -1,5 +1,11 @@
 import React from 'react';
 import {type CalendarEvent, MONTH_NAMES, WEEK_DAYS } from '../types';
+import { getEventStyle } from "../utils/eventHelpers.ts";
+import {
+    timeStringToDecimal,
+    formatTimeString,
+    parseLocalDate
+} from "../utils/dateHelpers.ts";
 
 interface EventDetailViewProps {
     event: CalendarEvent;
@@ -8,6 +14,9 @@ interface EventDetailViewProps {
     onBack: () => void;
 }
 
+const HOUR_HEIGHT = 80;
+const MIN_EVENT_HEIGHT = 50;
+
 const EventDetailView: React.FC<EventDetailViewProps> = ({
                                                              event,
                                                              previousView,
@@ -15,49 +24,24 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({
                                                              currentMonthIdx
 }) => {
 
-    const HOUR_HEIGHT = 80;
-
-    const getCategoryColor = (cat: string) => {
-        const catLower = cat.toLowerCase()
-        switch(catLower) {
-            case 'trabalho': return 'bg-gray-100 text-gray-700 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500';
-            case 'férias':   return 'bg-green-100 text-green-800 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500';
-            case 'feriado':  return 'bg-red-100 text-red-800 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500';
-            case 'festa':    return 'bg-purple-100 text-purple-800 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500';
-            default:         return 'bg-blue-50 text-blue-800 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500';
-        }
-    };
     // Formatação de Data
-    const timeStringToDecimal = (timeStr: string | null): number => {
-        if (!timeStr) return 8;
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        return hours + (minutes / 60);
-    };
-
-    // Formatação de Data
-    const eventDate = new Date(event.feriado_data);
+    const eventDate = parseLocalDate(event.feriado_data);
     const dayOfWeek = WEEK_DAYS[eventDate.getDay()];
-    const fullDate = `${eventDate.getDate()} de ${MONTH_NAMES[eventDate.getMonth()].toLowerCase().substring(0, 3)} de ${eventDate.getFullYear()}`;
-
-    // Formatação de Horário
-    const formatTime = (timeStr: string | null) => {
-        if (!timeStr) return '--:--';
-        return timeStr.substring(0, 5); // "HH:MM:SS" → "HH:MM"
-    };
+    const dayNumber = eventDate.getDate();
+    const monthName = MONTH_NAMES[eventDate.getMonth()].toLowerCase().substring(0, 3);
+    const yearNumber = eventDate.getFullYear();
+    const fullDate = `${dayNumber} de ${monthName} de ${yearNumber}`;
 
     const startHour = timeStringToDecimal(event.feriado_inicio);
     const endHour = timeStringToDecimal(event.feriado_fim);
-    const duration = endHour - startHour;
+    const duration = event.feriado_fim ? endHour - startHour : 1;
 
-    const startTime = formatTime(event.feriado_inicio);
-    const endTime = formatTime(event.feriado_fim);
+    const startTime = formatTimeString(event.feriado_inicio);
+    const endTime = formatTimeString(event.feriado_fim);
 
     // Lógica da Mini Timeline (Janela de 5 horas)
-    let startViewHour = Math.floor(startHour) - 1;
-    if (startViewHour < 0) startViewHour = 0;
-    if (startViewHour > 19) startViewHour = 19;
-
-    const timeSlots = Array.from({ length: duration + 3 }, (_, i) => startViewHour + i);
+    const startViewHour = Math.max(0, Math.min(19, Math.floor(startHour) - 1));
+    const timeSlots = Array.from({ length: Math.ceil(duration) + 3 }, (_, i) => startViewHour + i);
 
     const backButtonText = previousView === 'month_detail'
         ? MONTH_NAMES[currentMonthIdx]
@@ -69,8 +53,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({
 
         return {
             top: `${relativeStartHour * HOUR_HEIGHT}px`,
-            height: `${duration * HOUR_HEIGHT}px`,
-            minHeight: '50px'
+            height: `${Math.max(duration * HOUR_HEIGHT, MIN_EVENT_HEIGHT)}px`
         };
     };
 
@@ -107,26 +90,29 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({
                 <div className="flex items-center justify-between p-4 rounded-2xl border mb-8
                     bg-gray-50 border-gray-100 dark:bg-zinc-900 dark:border-zinc-800">
                     <div>
-                        <span className="block text-xs text-gray-400 dark:text-zinc-600 font-bold uppercase mb-1">Horário</span>
+                        <span className="block text-xs text-gray-400 dark:text-zinc-600 font-bold uppercase mb-1">
+                            Horário
+                        </span>
                         <div className="text-lg font-bold text-gray-900 dark:text-white">
                             {isDayLongEvent ? 'Dia inteiro' : `${startTime} até ${endTime}`}
                         </div>
+                        {event.feriado_duracao_dias > 1 && (
+                            <div className="mt-3 text-sm text-gray-600 dark:text-zinc-300">
+                                Duração: {event.feriado_duracao_dias} dias
+                            </div>
+                        )}
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase border-l-4 ${getCategoryColor(event.feriado_tipo)}`}>
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase border-l-4 ${getEventStyle(event.feriado_tipo)}`}>
                         {event.feriado_tipo}
                     </div>
-
-                    {event.feriado_duracao_dias > 1 && (
-                        <div className="mt-3 text-sm text-gray-600 dark:text-zinc-300">
-                            Duração: {event.feriado_duracao_dias} dias
-                        </div>
-                    )}
                 </div>
 
                 {/* TIMELINE */}
                 {!isDayLongEvent && (
                     <div className="mb-10 relative">
-                        <h3 className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-6">Timeline</h3>
+                        <h3 className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-6">
+                            Timeline
+                        </h3>
                         <div className="relative pt-3">
 
                             {timeSlots.map(hour => (
@@ -149,7 +135,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({
                             {/* O EVENTO */}
                             <div
                                 className={`absolute left-14 right-0 rounded-xl shadow-sm border-l-4 overflow-hidden z-20 flex transition-all
-                                    ${getCategoryColor(event.feriado_tipo)}
+                                    ${getEventStyle(event.feriado_tipo)}
                                     ${isShortEvent
                                     ? 'flex-row items-center justify-between p-2 px-3' // Layout Horizontal Compacto
                                     : 'flex-col justify-center p-4'                     // Layout Vertical Padrão

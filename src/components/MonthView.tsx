@@ -1,8 +1,20 @@
 import React, {useEffect, useState, useRef, useMemo} from 'react';
-import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent, getDaysInMonth} from '../types';
+import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent} from '../types';
 import {useDragScroll} from '../hooks/useDragScroll';
 import {eventsApi} from "../services/apiCache";
 import {useOrientation} from "../hooks/useOrientation.ts";
+import {
+    getEventStyle,
+    getUniqueTypesForDay,
+    hasHoliday,
+    groupEventsByMonthAndDay
+} from '../utils/eventHelpers';
+import {
+    getTodayInfo,
+    getCalendarGridData,
+    isWeekend,
+    getDayOfWeekInGrid,
+} from '../utils/dateHelpers';
 
 
 interface MonthDetailProps {
@@ -13,6 +25,20 @@ interface MonthDetailProps {
     zoomOrigin?: { x: number, y: number };
 }
 
+const WeekDaysHeader: React.FC<{ className?: string }> = ({className = ''}) => (
+    <div className={`grid grid-cols-7 gap-0 px-0 pb-1 ${className}`}>
+        {WEEK_DAYS_ABREVIATED.map((d, idx) => (
+            <div
+                key={d}
+                className={`text-center text-[10px] font-bold uppercase
+                    ${isWeekend(idx) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-400'}`}
+            >
+                {d}
+            </div>
+        ))}
+    </div>
+);
+
 const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick, zoomOrigin}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
     const orientation = useOrientation();
@@ -22,37 +48,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const months = Array.from({length: 12}, (_, i) => i);
     const headerOffset = 110;
     const isInitialScroll = useRef(true);
-    const today = new Date();
-    const currentDay = today.getDate();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    const todayInfo = useMemo(() => getTodayInfo(), []);
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // ✅ Normalize event type
-    const normalizeEventType = (type: string | boolean | null | undefined): string => {
-        if (!type || typeof type !== 'string') {
-            return 'outros';
-        }
-
-        const tipoLower = type.toLowerCase();
-        const knownTypes = ['trabalho', 'férias', 'feriado', 'festa'];
-
-        if (knownTypes.includes(tipoLower)) {
-            return tipoLower;
-        }
-        return 'outros';
-    };
-
-    const getUniqueTypesForDay = (events: CalendarEvent[]): string[] => {
-        const types = events.map(evt => normalizeEventType(evt.feriado_tipo));
-        return [...new Set(types)].filter(type => type !== 'feriado');
-    };
-
-    const hasHoliday = (events: CalendarEvent[]): boolean => {
-        return events.some(evt => normalizeEventType(evt.feriado_tipo) === 'feriado');
-    };
 
     useEffect(() => {
         const fetchYearEvents = async () => {
@@ -71,42 +70,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         fetchYearEvents();
     }, [year]);
 
-    const eventsByMonthAndDay = useMemo(() => {
-        const grouped: Record<number, Record<number, CalendarEvent[]>> = {};
-
-        yearEvents.forEach((evt: CalendarEvent) => {
-            const [evtYear, month, day] = evt.feriado_data.split('T')[0].split('-').map(Number);
-            const eventDate = new Date(evtYear, month - 1, day);
-            const monthNum = eventDate.getMonth();
-            const dayNum = eventDate.getDate();
-
-            if (!grouped[monthNum]) {
-                grouped[monthNum] = {};
-            }
-            if (!grouped[monthNum][dayNum]) {
-                grouped[monthNum][dayNum] = [];
-            }
-            grouped[monthNum][dayNum].push(evt);
-        });
-
-        return grouped;
-    }, [yearEvents]);
-
-    const getEventStyle = (type: string) => {
-        const tipoLower = type.toLowerCase();
-        switch (tipoLower) {
-            case 'trabalho':
-                return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-700';
-            case 'férias':
-                return 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-950/45 dark:text-green-200 dark:border-green-800';
-            case 'feriado':
-                return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/45 dark:text-red-200 dark:border-red-800';
-            case 'festa':
-                return 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/45 dark:text-purple-200 dark:border-purple-800';
-            default:
-                return 'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/45 dark:text-blue-200 dark:border-blue-800';
-        }
-    };
+    const eventsByMonthAndDay = useMemo(
+        () => groupEventsByMonthAndDay(yearEvents),
+        [yearEvents]
+    );
 
     // Scroll Spy
     useEffect(() => {
@@ -189,10 +156,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             }}
         >
             {months.map((mIdx) => {
-                const daysInMonth = getDaysInMonth(year, mIdx);
-                const firstDayIdx = new Date(year, mIdx, 1).getDay();
-                const blanks = Array.from({length: firstDayIdx}, (_, i) => i);
-                const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+                const gridData = getCalendarGridData(year, mIdx, 42);
                 const isDecember = mIdx === 11;
 
                 return (
@@ -203,21 +167,19 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                         className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
                     >
                         <div className="grid grid-cols-7 gap-0">
-                            {blanks.map(b => (
+                            {gridData.leadingBlanks.map(b => (
                                 <div key={`b-${mIdx}-${b}`}/>
                             ))}
 
-                            {days.map((d) => {
-                                const dateObj = new Date(year, mIdx, d);
-                                const dayOfWeek = dateObj.getDay();
-                                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                            {gridData.days.map((d) => {
+                                const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, d);
+                                const isDayWeekend = isWeekend(dayOfWeek);
                                 const isFirstDay = d === 1;
-                                const isToday = d === currentDay && mIdx === currentMonth && year === currentYear;
+                                const isTodayDay = d === todayInfo.day && mIdx === todayInfo.month && year === todayInfo.year;
                                 const allEvents: CalendarEvent[] = eventsByMonthAndDay[mIdx]?.[d] || [];
                                 const visibleEvents = allEvents.slice(0, 2);
                                 const remainingEvents = allEvents.length - 2;
 
-                                // ✅ Get unique types and check for holiday
                                 const uniqueTypes = getUniqueTypesForDay(allEvents);
                                 const dayHasFeriado = hasHoliday(allEvents);
 
@@ -228,11 +190,13 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                         className={`${isLandscape ? 'min-h-[45px] py-1' : 'min-h-[125px] pt-2'} flex flex-col items-center justify-start px-1 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                         border-gray-100 dark:border-zinc-800
                                         hover:bg-gray-50 dark:hover:bg-zinc-900
-                                        ${isWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
+                                        ${isDayWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
                                     >
                                         {isFirstDay && (
-                                            <div className={`absolute items-center z-10 ${isLandscape ? '-top-[1.2rem]' : '-top-[1.6rem]'}`}>
-                                                <span className={`font-black text-black dark:text-white capitalize tracking-tight leading-none ${isLandscape ? 'text-[12px]' : 'text-[15px]'}`}>
+                                            <div
+                                                className={`absolute items-center z-10 ${isLandscape ? '-top-[1.2rem]' : '-top-[1.6rem]'}`}>
+                                                <span
+                                                    className={`font-black text-black dark:text-white capitalize tracking-tight leading-none ${isLandscape ? 'text-[12px]' : 'text-[15px]'}`}>
                                                     {MONTH_NAMES[mIdx].substring(0, 3)}
                                                 </span>
                                             </div>
@@ -242,11 +206,11 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                             <span className={`
                                                 font-sans leading-none flex items-center justify-center rounded-full
                                                 ${isLandscape ? 'w-5 h-5 text-xs' : 'w-7 h-7 text-sm'}
-                                                ${isToday
+                                                ${isTodayDay
                                                 ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
                                                 : dayHasFeriado
                                                     ? 'text-red-500 dark:text-red-400 font-semibold'
-                                                    : isWeekend
+                                                    : isDayWeekend
                                                         ? 'text-gray-300 dark:text-zinc-600'
                                                         : 'text-gray-900 dark:text-zinc-300'
                                             }`}>
@@ -265,7 +229,8 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                     />
                                                 ))}
                                                 {uniqueTypes.length > 3 && (
-                                                    <span className="text-[6px] font-bold text-gray-400 dark:text-zinc-500 leading-none">
+                                                    <span
+                                                        className="text-[6px] font-bold text-gray-400 dark:text-zinc-500 leading-none">
                                                         +{uniqueTypes.length - 3}
                                                     </span>
                                                 )}
@@ -290,7 +255,8 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
 
                                                 {remainingEvents > 0 && (
                                                     <div className="w-full text-center">
-                                                        <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400">
+                                                        <span
+                                                            className="text-[8px] font-bold text-gray-400 dark:text-zinc-400">
                                                             +{remainingEvents}
                                                         </span>
                                                     </div>
@@ -341,20 +307,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                         </h1>
                     </div>
                 )}
-
-                {!isLandscape && (
-                    <div className="grid grid-cols-7 gap-0 px-0 pb-1">
-                        {WEEK_DAYS_ABREVIATED.map((d, idx) => (
-                            <div
-                                key={d}
-                                className={`text-center text-[10px] font-bold uppercase
-                            ${(idx === 0 || idx === 6) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-400'}`}
-                            >
-                                {d}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {!isLandscape && <WeekDaysHeader/>}
             </div>
 
             {/* Loading */}
@@ -379,17 +332,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                     {/* 60% - Calendar */}
                     <div
                         className="w-[60%] flex flex-col overflow-hidden border-r border-gray-200 dark:border-zinc-800">
-                        <div className="grid grid-cols-7 gap-0 px-0 pb-1 border-b border-gray-200 dark:border-zinc-800">
-                            {WEEK_DAYS_ABREVIATED.map((d, idx) => (
-                                <div
-                                    key={d}
-                                    className={`text-center text-[10px] font-bold uppercase
-                            ${(idx === 0 || idx === 6) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-400'}`}
-                                >
-                                    {d}
-                                </div>
-                            ))}
-                        </div>
+                        <WeekDaysHeader className="border-b border-gray-200 dark:border-zinc-800"/>
                         <CalendarContent/>
                     </div>
 

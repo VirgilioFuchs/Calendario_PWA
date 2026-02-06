@@ -1,8 +1,8 @@
 import type { CalendarEvent } from '../types';
 import { eventCache } from './eventCacheIDB';
 
-// const API_URL = "http://192.168.70.163:8000"; Windows
-const API_URL = "http://192.168.15.4:8000"; // MAC
+const API_URL = "http://192.168.70.163:8000"; // Windows
+// const API_URL = "http://192.168.15.4:8000"; // MAC
 
 const parseDateLocal = (dateString: string): Date => {
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);

@@ -1,5 +1,3 @@
-// components/DayCarousel.tsx
-
 import React, { useRef, useState } from "react";
 import DayView from "./DayView";
 import type { CalendarEvent } from "../types";
@@ -48,13 +46,8 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
 
             if (absX < minDetect && absY < minDetect) return;
 
-            if (absX > absY) {
-                setIsHorizontalSwipe(true);
-            } else {
-                setIsHorizontalSwipe(false);
-            }
+            setIsHorizontalSwipe(absX > absY);
         }
-        // Não precisa movimentar nada visualmente
     };
 
     const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -109,9 +102,7 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
                 onBack={onBack}
                 onEventClick={onEventClick}
                 horizontalMode={horizontalMode}
-                onDayChange={(day, monthIdx, year)=> {
-                    onChangeDate(day, monthIdx, year);
-                }}
+                onDayChange={onChangeDate}
             />
         </div>
     );
