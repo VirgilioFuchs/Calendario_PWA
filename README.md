@@ -1,6 +1,7 @@
 Tarefas 2026
 
-Desenvolver a tela MonthView na Horizontal
+Desenvolver a tela MonthView na Horizontal (sem o spy Scroll, fazer outro tipo de Scroll)
+Separar 2 pastas para o design portrait e landscape
 Resolver bugs do dayView (criar uma filtragem para eventos de vários classes para uma classe de acordo com o aluno)
 Otimizar o app
 Alinhar com a API
