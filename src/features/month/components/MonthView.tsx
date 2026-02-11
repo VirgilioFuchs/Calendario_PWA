@@ -23,6 +23,12 @@ interface MonthDetailProps {
     horizontalMode?: boolean;
 }
 
+type EventsByMonthAndDay = {
+    [month: number]: {
+        [day: number]: CalendarEvent[];
+    };
+};
+
 const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick, horizontalMode = false}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
 
@@ -30,38 +36,46 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const [visibleMonthIdx, setVisibleMonthIdx] = useState(monthIdx);
     const months = Array.from({length: 12}, (_, i) => i);
     const isInitialScroll = useRef(true);
-    const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
+    const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
     const isLandscape = horizontalMode;
 
     useEffect(() => {
-        const fetchMonthEvents = async () => {
+        const fetchYearEvents = async () => {
             try {
-                const data = await eventsApi.getEventsByMonth(year, monthIdx);
-                setMonthEvents(data);
+                const allPromises = Array.from({length: 12}, (_, i) =>
+                    eventsApi.getEventsByMonth(year, i)
+                );
+                const allData = await Promise.all(allPromises);
+                const flatData = allData.flat();
+                setYearEvents(flatData);
             } catch (error) {
                 console.error('Erro ao carregar eventos:', error);
-                setMonthEvents([]);
+                setYearEvents([]);
             }
         };
-
-        fetchMonthEvents();
-    }, [year, monthIdx]);
+        fetchYearEvents();
+    }, [year]);
 
 // Agrupar eventos por dia
-    const eventsByDay = useMemo(() => {
-        const grouped: Record<number, CalendarEvent[]> = {};
-        monthEvents.forEach((evt) => {
+    const eventsByMonthAndDay = useMemo<EventsByMonthAndDay>(() => {
+        const grouped: EventsByMonthAndDay = {};
+
+        yearEvents.forEach((evt) => {
             const eventDate = parseLocalDate(evt.feriado_data);
+            const month = eventDate.getMonth();
             const day = eventDate.getDate();
 
-            if (!grouped[day]) {
-                grouped[day] = [];
+            if (!grouped[month]) {
+                grouped[month] = {};
             }
-            grouped[day].push(evt);
+            if (!grouped[month][day]) {
+                grouped[month][day] = [];
+            }
+            grouped[month][day].push(evt);
         });
 
         return grouped;
-    }, [monthEvents]);
+    }, [yearEvents]);
 
     // Lógica do Spy Scroll
     useEffect(() => {
@@ -79,7 +93,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             },
             {
                 root: containerRef.current,
-                threshold: 0.85
+                threshold: 0.75
             }
         );
 
@@ -97,12 +111,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         const timeoutId = setTimeout(() => {
             const section = document.getElementById(`month-detail-section-${monthIdx}`);
             if (section && containerRef.current) {
-                if (isLandscape) {
-                    containerRef.current.scrollLeft = section.offsetLeft;
-                } else {
                     containerRef.current.scrollTop = section.offsetTop;
-                }
-
                 setTimeout(() => {
                     isInitialScroll.current = false;
                 }, 100);
@@ -155,7 +164,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                         <div
                             key={d}
                             className={`text-center text-[10px] font-bold uppercase
-                            ${(idx === 0 || idx === 6) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-400'}`}
+                            ${isWeekend(idx) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-900 dark:text-zinc-400'}`}
                         >
                             {d}
                         </div>
@@ -167,9 +176,9 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             <div
                 ref={containerRef}
                 className={`flex-1 cursor-grab active:cursor-grabbing select-none scroll-smooth gpu-accelerated
-                bg-white dark:bg-zinc-950 ${isLandscape ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
+                bg-white dark:bg-zinc-950 overflow-y-auto overflow-x-hidden`}
             >
-                <div className={isLandscape ? 'flex flex-row h-full' : ''}>
+                <div>
                 {months.map((mIdx) => {
                     const gridData = getCalendarGridData(year, mIdx);
                     const isDecember = mIdx === 11;
@@ -179,7 +188,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                             key={mIdx}
                             id={`month-detail-section-${mIdx}`}
                             data-month-index={mIdx}
-                            className={`month-grid-section ${isLandscape ? 'w-full min-w-full h-full px-2 pb-2' : isDecember ? 'mb-0' : 'mb-12'}`}
+                            className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
                         >
                             <div className="grid grid-cols-7 gap-0">
                                 {gridData.leadingBlanks.map((b) => (
@@ -192,7 +201,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                     const isDayWeekend = isWeekend(dayOfWeek);
                                     const isFirstDay = d === 1;
                                     const isTodayDay = isToday(year, mIdx, d);
-                                    const allEvents = eventsByDay[d] || [];
+                                    const allEvents = eventsByMonthAndDay[mIdx]?.[d] || []
                                     const visibleEvents = allEvents.slice(0, 2);
                                     const remainingEvents = allEvents.length - 2;
                                     const dayHasFeriado = hasHoliday(allEvents);

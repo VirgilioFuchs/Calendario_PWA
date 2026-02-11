@@ -18,6 +18,7 @@ import {
     isToday,
     isWeekend,
     getDayOfWeekInGrid,
+    parseLocalDate,
 } from '../../../shared/utils/dateHelpers.ts';
 
 interface DayViewProps {
@@ -393,7 +394,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                     <div
                                                         key={i}
                                                         className={`text-center text-[10px] font-medium pb-1
-                                                            ${i === 0 || i === 6
+                                                            ${isWeekend(i)
                                                             ? 'text-gray-400 dark:text-zinc-500'
                                                             : 'text-gray-800 dark:text-zinc-400'
                                                             }`}
@@ -425,7 +426,7 @@ const DayView: React.FC<DayViewProps> = ({
                                                                 const isSelected = day === selectedDay;
                                                                 const isTodayDay = isToday(currentYear, currentMonthIdx, day);
                                                                 const dayEvents = monthEvents.filter(evt => {
-                                                                    const eventDate = new Date(evt.feriado_data);
+                                                                    const eventDate = parseLocalDate(evt.feriado_data);
                                                                     return eventDate.getDate() === day;
                                                                 });
                                                                 const dayHasFeriado = hasHoliday(dayEvents);
