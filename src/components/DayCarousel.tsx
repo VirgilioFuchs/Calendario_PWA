@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import DayView from "./DayView";
+import DayViewLandscape from "./DayViewLandscape";
+import DayViewPortrait from "./DayViewPortrait";
 import type { CalendarEvent } from "../types";
 
 interface DayCarouselProps {
@@ -95,15 +96,25 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            <DayView
-                currentYear={currentYear}
-                currentMonthIdx={currentMonthIdx}
-                selectedDay={selectedDay}
-                onBack={onBack}
-                onEventClick={onEventClick}
-                horizontalMode={horizontalMode}
-                onDayChange={onChangeDate}
-            />
+            {horizontalMode ? (
+                <DayViewLandscape
+                    currentYear={currentYear}
+                    currentMonthIdx={currentMonthIdx}
+                    selectedDay={selectedDay}
+                    onBack={onBack}
+                    onEventClick={onEventClick}
+                    onDayChange={onChangeDate}
+                />
+            ) : (
+                <DayViewPortrait
+                    currentYear={currentYear}
+                    currentMonthIdx={currentMonthIdx}
+                    selectedDay={selectedDay}
+                    onBack={onBack}
+                    onEventClick={onEventClick}
+                    onDayChange={onChangeDate}
+                />
+            )}
         </div>
     );
 };

@@ -10,10 +10,6 @@ interface CacheEntry {
     expiresAt: number;
 }
 
-interface CacheStore {
-    [key: string]: CacheEntry;
-}
-
 class EventCacheIDB {
     private readonly DB_NAME = 'EventCacheDB';
     private readonly DB_VERSION = 1;
