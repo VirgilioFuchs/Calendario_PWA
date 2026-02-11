@@ -1,5 +1,5 @@
 import React from 'react';
-import MonthView from './MonthView';
+import MonthView from './MonthViewLayout';
 
 interface MonthViewLandscapeProps {
     year: number;
