@@ -48,7 +48,6 @@ const DayView: React.FC<DayViewProps> = ({
     const dayTitle = `${WEEK_DAYS[headerDate.getDay()]}, ${selectedDay} de ${MONTH_NAMES[currentMonthIdx]} de ${currentYear}`;
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(false); // Desenvolver a tela de carregamento
     const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dias'>('eventos');
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -70,7 +69,6 @@ const DayView: React.FC<DayViewProps> = ({
     // Eventos da timeline (do dia)
     useEffect(() => {
         const fetchDayEvents = async () => {
-            setIsLoading(true);
             try {
                 console.log('Buscando eventos:', {currentYear, currentMonthIdx, selectedDay});
                 const data = await eventsApi.getEventsByDay(currentYear, currentMonthIdx, selectedDay);
@@ -79,8 +77,6 @@ const DayView: React.FC<DayViewProps> = ({
             } catch (error) {
                 console.error('Erro ao carregar eventos:', error);
                 setEvents([]);
-            } finally {
-                setIsLoading(false);
             }
         };
         fetchDayEvents();
@@ -660,5 +656,4 @@ const DayView: React.FC<DayViewProps> = ({
 };
 
 export default DayView;
-
 
