@@ -1,7 +1,6 @@
 import React, {forwardRef, useCallback, useImperativeHandle, useMemo, useRef} from 'react';
-import {MONTH_NAMES, WEEK_DAYS, getDaysInMonth} from '../types';
-import {useDragScroll} from '../hooks/useDragScroll';
-import {useOrientation} from "../hooks/useOrientation.ts";
+import {MONTH_NAMES, WEEK_DAYS, getDaysInMonth} from '../../../shared/types';
+import {useDragScroll} from '../../../shared/hooks/useDragScroll';
 import clsx from 'clsx';
 
 // Propriedaes do componente YearView
@@ -9,6 +8,7 @@ interface YearViewProps {
     currentYear: number;
     onMonthClick: (monthIdx: number, coords: { x: number, y: number }) => void;
     isFirstLoad: boolean;
+    layoutMode: 'portrait' | 'landscape';
 }
 
 interface MonthCardProps {
@@ -169,16 +169,16 @@ const YearView = forwardRef<YearViewHandle, YearViewProps>((
     {
         currentYear,
         onMonthClick,
-        isFirstLoad
+        isFirstLoad,
+        layoutMode
     },
     ref
 ) => {
     const containerRef = useDragScroll() as React.RefObject<HTMLDivElement>;
-    const orientation = useOrientation();
 
     const monthCardsRef = useRef<(HTMLDivElement | null)[]>([]);
     const months = useMemo(() => Array.from({length: 12}, (_, i) => i), []);
-    const isLandscape = orientation === 'landscape';
+    const isLandscape = layoutMode === 'landscape';
 
     useImperativeHandle(ref, () => ({
         getScrollPosition: () => {
@@ -269,4 +269,3 @@ const YearView = forwardRef<YearViewHandle, YearViewProps>((
 });
 
 export default React.memo(YearView);
-

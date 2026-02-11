@@ -1,5 +1,5 @@
 import React, {useRef, useState } from "react";
-import {EVENT_LEGEND} from "../constants/eventLegend.ts";
+import {EVENT_LEGEND} from '../../shared/constants/eventLegend.ts';
 
 const HEADER_HEIGHT = 48;
 const DRAG_THRESHOLD = 65;

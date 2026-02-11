@@ -1,18 +1,18 @@
 import React, {useEffect, useState, useRef, useMemo} from 'react';
-import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent} from '../types';
-import {useDragScroll} from '../hooks/useDragScroll';
-import { eventsApi } from "../services/apiCache";
+import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent} from '../../../shared/types';
+import {useDragScroll} from '../../../shared/hooks/useDragScroll';
+import { eventsApi } from '../../../shared/services/apiCache';
 import {
     getCalendarGridData,
     isToday,
     getDayOfWeekInGrid,
     isWeekend,
     parseLocalDate
-} from '../utils/dateHelpers';
+} from '../../../shared/utils/dateHelpers';
 import {
     getEventStyle,
     hasHoliday
-} from '../utils/eventHelpers';
+} from '../../../shared/utils/eventHelpers';
 
 
 interface MonthDetailProps {
@@ -20,9 +20,10 @@ interface MonthDetailProps {
     monthIdx: number;
     onBack: () => void;
     onDayClick: (monthIdx: number, day: number, react?: DOMRect) => void;
+    horizontalMode?: boolean;
 }
 
-const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick}) => {
+const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick, horizontalMode = false}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
 
     // Estado para o título fixo (Scroll Spy)
@@ -30,19 +31,16 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const months = Array.from({length: 12}, (_, i) => i);
     const isInitialScroll = useRef(true);
     const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
-    const [loading, setLoading] = useState(false);
+    const isLandscape = horizontalMode;
 
     useEffect(() => {
         const fetchMonthEvents = async () => {
-            setLoading(true);
             try {
                 const data = await eventsApi.getEventsByMonth(year, monthIdx);
                 setMonthEvents(data);
             } catch (error) {
                 console.error('Erro ao carregar eventos:', error);
                 setMonthEvents([]);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -89,7 +87,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         sections?.forEach(s => observer.observe(s));
 
         return () => observer.disconnect();
-    }, []);
+    }, [containerRef]);
 
     // Scroll inicial para o mês selecionado
     useEffect(() => {
@@ -99,7 +97,11 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         const timeoutId = setTimeout(() => {
             const section = document.getElementById(`month-detail-section-${monthIdx}`);
             if (section && containerRef.current) {
-                containerRef.current.scrollTop = section.offsetTop;
+                if (isLandscape) {
+                    containerRef.current.scrollLeft = section.offsetLeft;
+                } else {
+                    containerRef.current.scrollTop = section.offsetTop;
+                }
 
                 setTimeout(() => {
                     isInitialScroll.current = false;
@@ -108,7 +110,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         }, 50);
 
         return () => clearTimeout(timeoutId)
-    }, [containerRef, monthIdx]);
+    }, [containerRef, isLandscape, monthIdx]);
 
     const handleDayClick = (e: React.MouseEvent<HTMLDivElement>, mIdx: number, d: number) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -164,10 +166,10 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
             {/* ÁREA DE ROLAGEM DOS MESES */}
             <div
                 ref={containerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden cursor-grab active:cursor-grabbing select-none
-                scroll-smooth gpu-accelerated
-                bg-white dark:bg-zinc-950"
+                className={`flex-1 cursor-grab active:cursor-grabbing select-none scroll-smooth gpu-accelerated
+                bg-white dark:bg-zinc-950 ${isLandscape ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
             >
+                <div className={isLandscape ? 'flex flex-row h-full' : ''}>
                 {months.map((mIdx) => {
                     const gridData = getCalendarGridData(year, mIdx);
                     const isDecember = mIdx === 11;
@@ -177,7 +179,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                             key={mIdx}
                             id={`month-detail-section-${mIdx}`}
                             data-month-index={mIdx}
-                            className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
+                            className={`month-grid-section ${isLandscape ? 'w-full min-w-full h-full px-2 pb-2' : isDecember ? 'mb-0' : 'mb-12'}`}
                         >
                             <div className="grid grid-cols-7 gap-0">
                                 {gridData.leadingBlanks.map((b) => (
@@ -199,7 +201,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                         <div
                                             key={d}
                                             onClick={(e) => handleDayClick(e, mIdx, d)}
-                                            className={`min-h-[125px] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
+                                            className={`${isLandscape ? 'min-h-[115px]' : 'min-h-[125px]'} flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                             border-gray-100 dark:border-zinc-800
                                             hover:bg-gray-50 dark:hover:bg-zinc-900
                                             ${isDayWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
@@ -263,6 +265,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                         </div>
                     );
                 })}
+                </div>
             </div>
         </div>
     );

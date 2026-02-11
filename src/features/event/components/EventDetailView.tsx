@@ -1,11 +1,11 @@
 import React from 'react';
-import {type CalendarEvent, MONTH_NAMES, WEEK_DAYS } from '../types';
-import { getEventStyle } from "../utils/eventHelpers.ts";
+import {type CalendarEvent, MONTH_NAMES, WEEK_DAYS } from '../../../shared/types';
+import { getEventStyle } from '../../../shared/utils/eventHelpers.ts';
 import {
     timeStringToDecimal,
     formatTimeString,
     parseLocalDate
-} from "../utils/dateHelpers.ts";
+} from '../../../shared/utils/dateHelpers.ts';
 
 interface EventDetailViewProps {
     event: CalendarEvent;

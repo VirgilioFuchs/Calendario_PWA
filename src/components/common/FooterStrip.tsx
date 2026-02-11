@@ -1,5 +1,5 @@
 import React, {useMemo, useEffect, useState, useRef, useCallback} from 'react';
-import {WEEK_DAYS_ABREVIATED} from '../types';
+import {WEEK_DAYS_ABREVIATED} from '../../shared/types';
 import clsx from "clsx";
 
 interface FooterStripProps {
