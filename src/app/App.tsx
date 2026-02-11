@@ -1,18 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {motion, AnimatePresence, type Variants} from "framer-motion";
 import Header from '../components/common/Header';
-import {type YearViewHandle } from '../features/year/components/YearView.tsx';
-import YearViewPortrait from '../features/year/components/YearViewPortrait.tsx';
-import YearViewLandscape from '../features/year/components/YearViewLandscape.tsx';
+import YearView, {type YearViewHandle } from '../features/year/components/YearView.tsx';
 import FooterStrip from '../components/common/FooterStrip';
-import MonthViewPortrait from '../features/month/components/MonthViewPortrait.tsx';
-import MonthViewLandscape from '../features/month/components/MonthViewLandscape.tsx';
+import MonthView from '../features/month/components/MonthView.tsx';
 import FooterConfig from '../components/common/FooterConfig.tsx';
 import EventDetailView from '../features/event/components/EventDetailView.tsx';
 import type {CalendarEvent} from '../shared/types';
 import {useOrientation} from '../shared/hooks/useOrientation.ts';
 import './App.css';
-import DayCarousel from '../features/day/components/DayCarousel.tsx';
+import DayView from '../features/day/components/DayView.tsx';
 
 
 type NavLevel = 'year_list' | 'month_detail' | 'day_detail' | 'event_detail';
@@ -289,21 +286,13 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            {orientation === 'landscape' ? (
-                                <YearViewLandscape
-                                    ref={yearViewRef}
-                                    currentYear={year}
-                                    onMonthClick={handleMonthSelect}
-                                    isFirstLoad={isFirstLoad.current}
-                                />
-                            ) : (
-                                <YearViewPortrait
-                                    ref={yearViewRef}
-                                    currentYear={year}
-                                    onMonthClick={handleMonthSelect}
-                                    isFirstLoad={isFirstLoad.current}
-                                />
-                            )}
+                            <YearView
+                                ref={yearViewRef}
+                                currentYear={year}
+                                onMonthClick={handleMonthSelect}
+                                isFirstLoad={isFirstLoad.current}
+                                orientation={orientation}
+                            />
                         </motion.div>
                     )}
 
@@ -318,23 +307,14 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            {orientation === 'landscape' ? (
-                                <MonthViewLandscape
-                                    year={year}
-                                    monthIdx={selectedMonthIdx}
-                                    onBack={handleBackToYear}
-                                    onDayClick={handleDaySelect}
-                                    zoomOrigin={zoomOrigin}
-                                />
-                            ) : (
-                                <MonthViewPortrait
-                                    year={year}
-                                    monthIdx={selectedMonthIdx}
-                                    onBack={handleBackToYear}
-                                    onDayClick={handleDaySelect}
-                                    zoomOrigin={zoomOrigin}
-                                />
-                            )}
+                            <MonthView
+                                year={year}
+                                monthIdx={selectedMonthIdx}
+                                onBack={handleBackToYear}
+                                onDayClick={handleDaySelect}
+                                zoomOrigin={zoomOrigin}
+                                orientation={orientation}
+                            />
                         </motion.div>
                     )}
 
@@ -349,14 +329,14 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            <DayCarousel
+                            <DayView
                                 currentYear={year}
                                 currentMonthIdx={selectedMonthIdx}
                                 selectedDay={selectedDay}
                                 onBack={handleBackToMonth}
                                 onChangeDate={handleChangeDate}
                                 onEventClick={handleEventSelect}
-                                horizontalMode={orientation === 'landscape'}
+                                orientation={orientation}
                             />
                         </motion.div>
                     )}

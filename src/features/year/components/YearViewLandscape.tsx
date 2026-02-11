@@ -1,5 +1,5 @@
 import {forwardRef} from 'react';
-import YearView, {type YearViewHandle} from './YearView';
+import YearView, {type YearViewHandle} from './YearViewContent';
 
 interface YearViewLandscapeProps {
     currentYear: number;
