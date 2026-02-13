@@ -1,30 +1,31 @@
-import React, { useRef, useState } from "react";
-import DayViewLandscape from "./DayViewLandscape";
-import DayViewPortrait from "./DayViewPortrait";
+import React, { useRef, useState } from 'react';
+import DayViewLandscape from '../components/DayViewLandscape';
+import DayViewPortrait from '../components/DayViewPortrait';
 import type { CalendarEvent } from '../../../shared/types';
 
-interface DayCarouselProps {
+interface DayControllerProps {
     currentYear: number;
     currentMonthIdx: number;
     selectedDay: number;
     onBack: () => void;
     onChangeDate: (day: number, monthIdx: number, year: number) => void;
     onEventClick: (event: CalendarEvent) => void;
-    horizontalMode?: boolean;
+    orientation: 'portrait' | 'landscape';
 }
 
-const DayCarousel: React.FC<DayCarouselProps> = ({
-                                                     currentYear,
-                                                     currentMonthIdx,
-                                                     selectedDay,
-                                                     onBack,
-                                                     onChangeDate,
-                                                     onEventClick,
-                                                     horizontalMode = false,
-                                                 }) => {
+const DayController: React.FC<DayControllerProps> = ({
+    currentYear,
+    currentMonthIdx,
+    selectedDay,
+    onBack,
+    onChangeDate,
+    onEventClick,
+    orientation,
+}) => {
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
     const [isHorizontalSwipe, setIsHorizontalSwipe] = useState<boolean | null>(null);
+    const horizontalMode = orientation === 'landscape';
 
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         const touch = e.touches[0];
@@ -70,9 +71,9 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
 
         let diff = 0;
         if (deltaX <= -threshold) {
-            diff = 1;   // próximo dia
+            diff = 1;
         } else if (deltaX >= threshold) {
-            diff = -1;  // dia anterior
+            diff = -1;
         }
 
         if (diff !== 0) {
@@ -119,4 +120,4 @@ const DayCarousel: React.FC<DayCarouselProps> = ({
     );
 };
 
-export default DayCarousel;
+export default DayController;
