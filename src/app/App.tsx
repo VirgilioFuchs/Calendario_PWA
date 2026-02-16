@@ -1,15 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {motion, AnimatePresence, type Variants} from "framer-motion";
 import Header from '../components/common/Header';
-import YearController, {type YearViewHandle } from '../features/year/controllers/YearController.tsx';
 import FooterStrip from '../components/common/FooterStrip';
-import MonthController from '../features/month/controllers/MonthController.tsx';
+import MonthView from '../features/month/components/MonthView.tsx';
 import FooterConfig from '../components/common/FooterConfig.tsx';
 import EventDetailView from '../features/event/components/EventDetailView.tsx';
 import type {CalendarEvent} from '../shared/types';
 import {useOrientation} from '../shared/hooks/useOrientation.ts';
 import './App.css';
-import DayController from '../features/day/controllers/DayController.tsx';
+import DayView from '../features/day/components/DayView.tsx';
+import YearView from "../features/year/components/YearView.tsx";
 
 
 type NavLevel = 'year_list' | 'month_detail' | 'day_detail' | 'event_detail';
@@ -32,12 +32,9 @@ const App: React.FC = () => {
     const orientation = useOrientation();
 
     // Animações
-    const [zoomOrigin, setZoomOrigin] = useState({x: 0, y: 0});
     const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
     const isFirstLoad = useRef(true);
 
-    const yearViewScrollRef = useRef(0);
-    const yearViewRef = useRef<YearViewHandle>(null);
     const hasInitialScrolled = useRef(false);
 
     // Tema Inteligente
@@ -197,14 +194,8 @@ const App: React.FC = () => {
         if (newYear !== year) setYear(newYear);
     }
 
-    const handleMonthSelect = (monthIdx: number, coords: { x: number, y: number }) => {
+    const handleMonthSelect = (monthIdx: number) => {
         isFirstLoad.current = false;
-
-        if (yearViewRef.current) {
-            yearViewScrollRef.current = yearViewRef.current.getScrollPosition();
-        }
-
-        setZoomOrigin(coords);
         setSelectedMonthIdx(monthIdx);
         setAnimDirection('forward');
         setNavLevel('month_detail');
@@ -238,14 +229,6 @@ const App: React.FC = () => {
     const handleBackToYear = () => {
         setAnimDirection('backward');
         setNavLevel('year_list');
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                if (yearViewRef.current && yearViewScrollRef.current > 0) {
-                    yearViewRef.current.setScrollPosition(yearViewScrollRef.current)
-                }
-            });
-        });
     };
 
     const handleEventSelect = (event: CalendarEvent) => {
@@ -286,8 +269,7 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            <YearController
-                                ref={yearViewRef}
+                            <YearView
                                 currentYear={year}
                                 onMonthClick={handleMonthSelect}
                                 isFirstLoad={isFirstLoad.current}
@@ -307,12 +289,11 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            <MonthController
+                            <MonthView
                                 year={year}
                                 monthIdx={selectedMonthIdx}
                                 onBack={handleBackToYear}
                                 onDayClick={handleDaySelect}
-                                zoomOrigin={zoomOrigin}
                                 orientation={orientation}
                             />
                         </motion.div>
@@ -329,7 +310,7 @@ const App: React.FC = () => {
                             className="h-full overflow-hidden"
                             style={{ willChange: 'transform, opacity' }}
                         >
-                            <DayController
+                            <DayView
                                 currentYear={year}
                                 currentMonthIdx={selectedMonthIdx}
                                 selectedDay={selectedDay}

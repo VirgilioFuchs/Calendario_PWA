@@ -1,18 +1,18 @@
 import React, {useEffect, useState, useRef, useMemo} from 'react';
 import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent} from '../../../shared/types';
-import {useDragScroll} from '../../../shared/hooks/useDragScroll';
-import { eventsApi } from '../../../shared/services/apiCache';
+import {useDragScroll} from '../../../shared/hooks/useDragScroll.ts';
+import { eventsApi } from '../../../shared/services/apiCache.ts';
 import {
     getCalendarGridData,
     isToday,
     getDayOfWeekInGrid,
     isWeekend,
     parseLocalDate
-} from '../../../shared/utils/dateHelpers';
+} from '../../../shared/utils/dateHelpers.ts';
 import {
     getEventStyle,
     hasHoliday
-} from '../../../shared/utils/eventHelpers';
+} from '../../../shared/utils/eventHelpers.ts';
 
 
 interface MonthDetailProps {
@@ -20,7 +20,6 @@ interface MonthDetailProps {
     monthIdx: number;
     onBack: () => void;
     onDayClick: (monthIdx: number, day: number, react?: DOMRect) => void;
-    horizontalMode?: boolean;
 }
 
 type EventsByMonthAndDay = {
@@ -29,7 +28,7 @@ type EventsByMonthAndDay = {
     };
 };
 
-const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick, horizontalMode = false}) => {
+const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
 
     // Estado para o título fixo (Scroll Spy)
@@ -37,7 +36,6 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
     const months = Array.from({length: 12}, (_, i) => i);
     const isInitialScroll = useRef(true);
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
-    const isLandscape = horizontalMode;
 
     useEffect(() => {
         const fetchYearEvents = async () => {
@@ -111,7 +109,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         const timeoutId = setTimeout(() => {
             const section = document.getElementById(`month-detail-section-${monthIdx}`);
             if (section && containerRef.current) {
-                    containerRef.current.scrollTop = section.offsetTop;
+                containerRef.current.scrollTop = section.offsetTop;
                 setTimeout(() => {
                     isInitialScroll.current = false;
                 }, 100);
@@ -119,7 +117,7 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
         }, 50);
 
         return () => clearTimeout(timeoutId)
-    }, [containerRef, isLandscape, monthIdx]);
+    }, [containerRef, monthIdx]);
 
     const handleDayClick = (e: React.MouseEvent<HTMLDivElement>, mIdx: number, d: number) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -179,53 +177,53 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                 bg-white dark:bg-zinc-950 overflow-y-auto overflow-x-hidden`}
             >
                 <div>
-                {months.map((mIdx) => {
-                    const gridData = getCalendarGridData(year, mIdx);
-                    const isDecember = mIdx === 11;
+                    {months.map((mIdx) => {
+                        const gridData = getCalendarGridData(year, mIdx);
+                        const isDecember = mIdx === 11;
 
-                    return (
-                        <div
-                            key={mIdx}
-                            id={`month-detail-section-${mIdx}`}
-                            data-month-index={mIdx}
-                            className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
-                        >
-                            <div className="grid grid-cols-7 gap-0">
-                                {gridData.leadingBlanks.map((b) => (
-                                    <div key={`b-${mIdx}-${b}`} />
-                                ))}
+                        return (
+                            <div
+                                key={mIdx}
+                                id={`month-detail-section-${mIdx}`}
+                                data-month-index={mIdx}
+                                className={`month-grid-section ${isDecember ? 'mb-0' : 'mb-12'}`}
+                            >
+                                <div className="grid grid-cols-7 gap-0">
+                                    {gridData.leadingBlanks.map((b) => (
+                                        <div key={`b-${mIdx}-${b}`} />
+                                    ))}
 
-                                {/* Dias */}
-                                {gridData.days.map((d) => {
-                                    const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, d);
-                                    const isDayWeekend = isWeekend(dayOfWeek);
-                                    const isFirstDay = d === 1;
-                                    const isTodayDay = isToday(year, mIdx, d);
-                                    const allEvents = eventsByMonthAndDay[mIdx]?.[d] || []
-                                    const visibleEvents = allEvents.slice(0, 2);
-                                    const remainingEvents = allEvents.length - 2;
-                                    const dayHasFeriado = hasHoliday(allEvents);
+                                    {/* Dias */}
+                                    {gridData.days.map((d) => {
+                                        const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, d);
+                                        const isDayWeekend = isWeekend(dayOfWeek);
+                                        const isFirstDay = d === 1;
+                                        const isTodayDay = isToday(year, mIdx, d);
+                                        const allEvents = eventsByMonthAndDay[mIdx]?.[d] || []
+                                        const visibleEvents = allEvents.slice(0, 2);
+                                        const remainingEvents = allEvents.length - 2;
+                                        const dayHasFeriado = hasHoliday(allEvents);
 
-                                    return (
-                                        <div
-                                            key={d}
-                                            onClick={(e) => handleDayClick(e, mIdx, d)}
-                                            className={`${isLandscape ? 'min-h-[115px]' : 'min-h-[125px]'} flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
+                                        return (
+                                            <div
+                                                key={d}
+                                                onClick={(e) => handleDayClick(e, mIdx, d)}
+                                                className={`min-h-[125px] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                             border-gray-100 dark:border-zinc-800
                                             hover:bg-gray-50 dark:hover:bg-zinc-900
                                             ${isDayWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
-                                        >
-                                            {/* Nome do Mês no Dia 1 */}
-                                            {isFirstDay && (
-                                                <div className="absolute -top-[1.6rem] items-center z-10">
+                                            >
+                                                {/* Nome do Mês no Dia 1 */}
+                                                {isFirstDay && (
+                                                    <div className="absolute -top-[1.6rem] items-center z-10">
                                                     <span className="text-[15px] font-black text-black dark:text-white captalize tracking-tight leading-none">
                                                         {MONTH_NAMES[mIdx].substring(0,3)}
                                                     </span>
-                                                </div>
-                                            )}
+                                                    </div>
+                                                )}
 
-                                            {/*Destaque do dia de hoje*/}
-                                            <div className="mb-2 mt-0.5">
+                                                {/*Destaque do dia de hoje*/}
+                                                <div className="mb-2 mt-0.5">
                                                 <span className={`
                                                     text-sm font-sans leading-none flex items-center justify-center w-7 h-7 rounded-full
                                                     ${isTodayDay
@@ -238,45 +236,45 @@ const MonthView: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayCli
                                                 }`}>
                                                     {d}
                                                 </span>
-                                            </div>
+                                                </div>
 
-                                            <div className="mt-auto w-full px-0.5 pb-3.5 flex flex-col gap-[1px]">
+                                                <div className="mt-auto w-full px-0.5 pb-3.5 flex flex-col gap-[1px]">
 
-                                                {/* Lista de Eventos */}
-                                                <div className="flex flex-col gap-[2px] w-full">
-                                                    {visibleEvents.map((evt) => (
-                                                        <div
-                                                            key={evt.feriado_id}
-                                                            className={`
+                                                    {/* Lista de Eventos */}
+                                                    <div className="flex flex-col gap-[2px] w-full">
+                                                        {visibleEvents.map((evt) => (
+                                                            <div
+                                                                key={evt.feriado_id}
+                                                                className={`
                                                                 block w-auto max-w-full truncate rounded-[2px] px-1 py-0 text-[8.5px] leading-[11px] font-semibold border-l-[3px] text-left mx-0.5
                                                                 ${getEventStyle(evt.feriado_tipo)}
                                                             `}
-                                                            title={evt.feriado_titulo}
-                                                        >
-                                                            {evt.feriado_tipo}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                                title={evt.feriado_titulo}
+                                                            >
+                                                                {evt.feriado_tipo}
+                                                            </div>
+                                                        ))}
+                                                    </div>
 
-                                                {/* Contador */}
-                                                {remainingEvents > 0 && (
-                                                    <div className="w-full text-center">
+                                                    {/* Contador */}
+                                                    {remainingEvents > 0 && (
+                                                        <div className="w-full text-center">
                                                         <span className="text-[8px] font-bold text-gray-400 dark:text-zinc-400 ">
                                                             +{remainingEvents}
                                                         </span>
-                                                    </div>
-                                                )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
                 </div>
             </div>
         </div>
     );
 };
-export default MonthView;
+export default MonthViewPortrait;

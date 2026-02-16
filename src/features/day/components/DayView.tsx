@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import DayViewLandscape from '../components/DayViewLandscape';
-import DayViewPortrait from '../components/DayViewPortrait';
+import DayViewLandscape from '../orientation/DayViewLandscape.tsx';
+import DayViewPortrait from '../orientation/DayViewPortrait.tsx';
 import type { CalendarEvent } from '../../../shared/types';
 
 interface DayControllerProps {
@@ -13,7 +13,7 @@ interface DayControllerProps {
     orientation: 'portrait' | 'landscape';
 }
 
-const DayController: React.FC<DayControllerProps> = ({
+const DayView: React.FC<DayControllerProps> = ({
     currentYear,
     currentMonthIdx,
     selectedDay,
@@ -120,4 +120,4 @@ const DayController: React.FC<DayControllerProps> = ({
     );
 };
 
-export default DayController;
+export default DayView;
