@@ -1,6 +1,6 @@
 import React, {useEffect, useState, useRef, useMemo} from 'react';
 import {WEEK_DAYS_ABREVIATED, MONTH_NAMES, type CalendarEvent} from '../../../shared/types';
-import { eventsApi } from '../../../shared/services/apiCache.ts';
+import {eventsApi} from '../../../shared/services/apiCache.ts';
 import {
     getCalendarGridData,
     isToday,
@@ -9,8 +9,9 @@ import {
     parseLocalDate
 } from '../../../shared/utils/dateHelpers.ts';
 import {
-    getEventStyle,
-    hasHoliday
+    getDotColor,
+    normalizeEventType,
+    hasHoliday, isDateMarkerType
 } from '../../../shared/utils/eventHelpers.ts';
 
 interface MonthDetailProps {
@@ -30,10 +31,9 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
     // Estado para o título fixo (Scroll Spy)
     const [visibleMonthIdx, setVisibleMonthIdx] = useState(monthIdx);
     const months = Array.from({length: 12}, (_, i) => i);
-    const isInitialScroll = useRef(true);
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
-    const scrollTimeoutRef = useRef<number | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const isInitialScroll = useRef(true);
 
     useEffect(() => {
         const fetchYearEvents = async () => {
@@ -74,56 +74,33 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
     }, [yearEvents]);
 
     useEffect(() => {
-        const handleScroll = () => {
-            if (isInitialScroll.current) return;
+        const container = containerRef.current;
+        if (!container) return;
 
-            // Limpa o timeout anterior
-            if (scrollTimeoutRef.current) {
-                window.clearTimeout(scrollTimeoutRef.current);
-            }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return; // ignora quem saiu, só processa quem entrou
 
-            // ✅ Delay para atualizar apenas quando o scroll parar
-            scrollTimeoutRef.current = window.setTimeout(() => {
-                const container = containerRef.current;
-                if (!container) return;
-
-                const sections = container.querySelectorAll<HTMLElement>('.month-grid-section'); // ✅ Tipar o querySelectorAll
-                const containerRect = container.getBoundingClientRect();
-
-                let closestIdx = 0;
-                let minDistance = Infinity;
-
-                sections.forEach((section) => {
-                    const rect = section.getBoundingClientRect();
-                    // Calcula a distância do topo da seção até o topo do container
-                    const distance = Math.abs(rect.top - containerRect.top);
-
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        const idx = Number(section.dataset.monthIndex); // ✅ Usar dataset
-                        if (!Number.isNaN(idx)) {
-                            closestIdx = idx;
-                        }
+                    const idx = Number(
+                        (entry.target as HTMLElement).dataset.monthIndex
+                    );
+                    if (!Number.isNaN(idx)) {
+                        setVisibleMonthIdx(idx); // atualiza o mês visível
                     }
                 });
-
-                setVisibleMonthIdx(closestIdx);
-            }, 300) as unknown as number;
-        };
-
-        const container = containerRef.current;
-        if (container) {
-            container.addEventListener('scroll', handleScroll);
-        }
-
-        return () => {
-            if (container) {
-                container.removeEventListener('scroll', handleScroll);
+            },
+            {
+                root: container,
+                rootMargin: '-40% 0px -40% 0px',
+                threshold: 0,
             }
-            if (scrollTimeoutRef.current) {
-                window.clearTimeout(scrollTimeoutRef.current);
-            }
-        };
+        );
+
+        const sections = container.querySelectorAll<HTMLElement>('.month-grid-section');
+        sections.forEach((section) => observer.observe(section));
+
+        return () => observer.disconnect();
     }, []);
 
 
@@ -158,16 +135,20 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                 bg-white/95 backdrop-blur-sm border-b border-gray-300
                 dark:bg-zinc-950/95 dark:border-zinc-800">
                 <div className="flex items-center justify-between px-4 py-2">
-                    <button onClick={onBack} className="flex items-center gap-1 hover:opacity-70 transition-opacity text-black dark:text-white">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <button onClick={onBack}
+                            className="flex items-center gap-1 hover:opacity-70 transition-opacity text-black dark:text-white">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M15 19L8 12L15 5"/>
                         </svg>
                         <span className="text-base font-semibold leading-none pb-0.5">{year}</span>
                     </button>
 
                     {/* Desenvolver a pesquisa de eventos da LUPA - Esperando pela API */}
-                    <button className="p-2 -mr-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <button
+                        className="p-2 -mr-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
@@ -175,12 +156,13 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                 </div>
             </div>
 
-            {/* LAYOUT 60/40 - Abaixo do header */}
+            {/* LAYOUT 50/50 - Abaixo do header */}
             <div className="flex flex-1 overflow-hidden">
-                {/* ✅ LADO ESQUERDO - 60% - Calendário */}
+                {/* ✅ LADO ESQUERDO - 50% - Calendário */}
                 <div className="w-[50%] flex flex-col border-r border-gray-200 dark:border-zinc-800">
                     {/* Dias da Semana */}
-                    <div className="flex-shrink-0 grid grid-cols-7 bg-gray-100 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
+                    <div
+                        className="flex-shrink-0 grid grid-cols-7 bg-gray-100 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
                         {WEEK_DAYS_ABREVIATED.map((d, idx) => (
                             <div
                                 key={idx}
@@ -194,9 +176,11 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                     {/* ÁREA DE ROLAGEM DOS MESES */}
                     <div
                         ref={containerRef}
-                        className="flex-1 overflow-y-auto scroll-smooth bg-white dark:bg-zinc-950"
+                        className="flex-1 overflow-y-auto bg-white dark:bg-zinc-950"
                         style={{
-                            scrollSnapAlign: 'start',
+                            scrollSnapType: 'y mandatory',
+                            WebkitOverflowScrolling: 'touch',
+                            overscrollBehavior: 'contain',
                         }}
                     >
                         {months.map((mIdx) => {
@@ -212,9 +196,11 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                     style={{
                                         scrollSnapAlign: 'start',
                                         scrollSnapStop: 'always',
+                                        minHeight: '100%'
                                     }}
                                 >
-                                    <div className={`grid grid-cols-7 ${!isDecember ? 'border-b-4 border-gray-300 dark:border-zinc-800' : ''}`}>
+                                    <div
+                                        className={`grid grid-cols-7 ${!isDecember ? 'border-b-4 border-gray-300 dark:border-zinc-800' : ''}`}>
                                         {gridData.leadingBlanks.map((b) => (
                                             <div
                                                 key={`blank-${b}`}
@@ -226,18 +212,27 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                         {gridData.days.map((d) => {
                                             const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, d);
                                             const isDayWeekend = isWeekend(dayOfWeek);
-                                            const isFirstDay = d === 1;
                                             const isTodayDay = isToday(year, mIdx, d);
-                                            const allEvents = eventsByMonthAndDay[mIdx]?.[d] || []
-                                            const visibleEvents = allEvents.slice(0, 2);
-                                            const remainingEvents = allEvents.length - 2;
-                                            const dayHasFeriado = hasHoliday(allEvents);
+                                            const allEvents = eventsByMonthAndDay[mIdx]?.[d] || [];
+                                            const feriados = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'feriado');
+                                            const ferias = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'férias');
+                                            const dotEvents = allEvents.filter(e => !isDateMarkerType(e.feriado_tipo));
+                                            const dayNumberColorClass = feriados.length > 0
+                                                ? 'text-red-500 dark:text-red-400 font-semibold'
+                                                : ferias.length > 0
+                                                    ? 'text-green-500 dark:text-green-400 font-semibold'
+                                                    : isDayWeekend
+                                                        ? 'text-gray-400 dark:text-zinc-500'
+                                                        : 'text-gray-700 dark:text-zinc-300';
+                                            const visibleDots = dotEvents.slice(0, 2);
+                                            const remainingDots = Math.max(dotEvents.length - 2, 0);
+
 
                                             return (
                                                 <div
                                                     key={d}
                                                     onClick={(e) => handleDayClick(e, mIdx, d)}
-                                                    className={`min-h-[4.5rem] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
+                                                    className={`min-h-[4.4rem] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                                         border-gray-100 dark:border-zinc-800
                                                         hover:bg-gray-50 dark:hover:bg-zinc-900
                                                         ${isDayWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
@@ -248,11 +243,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                             flex items-center justify-center text-xs font-medium transition-all
                                                             ${isTodayDay
                                                             ? 'w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
-                                                            : dayHasFeriado
-                                                                ? 'text-red-500 dark:text-red-400 font-semibold'
-                                                                : isDayWeekend
-                                                                    ? 'text-gray-400 dark:text-zinc-500'
-                                                                    : 'text-gray-700 dark:text-zinc-300'
+                                                            : dayNumberColorClass
                                                         }
                                                         `}
                                                     >
@@ -260,20 +251,23 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                     </div>
 
                                                     {/* Lista de Eventos */}
-                                                    {visibleEvents.map((evt) => (
+                                                    {visibleDots.length > 0 && (
                                                         <div
-                                                            key={evt.feriado_id}
-                                                            className={`w-full px-1 py-0.5 mb-0.5 text-[10px] font-medium truncate rounded ${getEventStyle(evt.feriado_tipo)}`}
-                                                        >
-                                                            {evt.feriado_tipo}
+                                                            className="flex flex-row gap-0.5 mt-3 justify-center items-center">
+                                                            {visibleDots.map((evt) => (
+                                                                <div
+                                                                    key={evt.feriado_id}
+                                                                    className={`w-1 h-1 rounded-full flex-shrink-0 ${getDotColor(evt.feriado_tipo)}`}
+                                                                />
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    )}
 
-                                                    {/* Contador */}
-                                                    {remainingEvents > 0 && (
-                                                        <div className="text-[10px] text-gray-500 dark:text-zinc-500 font-medium mt-auto">
-                                                            +{remainingEvents}
-                                                        </div>
+                                                    {remainingDots > 0 && (
+                                                        <span
+                                                            className="text-[0.75rem] leading-none text-gray-400 dark:text-zinc-500 mt-[0.89rem]">
+                                                                +{remainingDots}
+                                                        </span>
                                                     )}
                                                 </div>
                                             );

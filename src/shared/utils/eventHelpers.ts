@@ -10,17 +10,12 @@ const KNOWN_EVENT_TYPES = ['trabalho', 'férias', 'feriado', 'festa'] as const;
  * Normalizes an event type string to a known category.
  * Returns 'outros' if the type is invalid or unrecognized.
  */
-const normalizeEventType = (type: string | boolean | null | undefined): string => {
-    if (!type || typeof type !== 'string') {
-        return 'outros';
-    }
-
-    const tipoLower = type.toLowerCase();
-
-    if ((KNOWN_EVENT_TYPES as readonly string[]).includes(tipoLower)) {
-        return tipoLower;
-    }
-    return 'outros';
+export const normalizeEventType = (type: string | boolean | null | undefined): string => {
+    if (!type || typeof type !== 'string') return 'outros';
+    const tipoLower = type.toLowerCase().trim();
+    return (KNOWN_EVENT_TYPES as readonly string[]).includes(tipoLower)
+        ? tipoLower
+        : 'outros';
 };
 
 // ============================================
@@ -70,17 +65,31 @@ export const getEventRingColor = (type: string): string => {
  * Returns dot color for mini calendar indicators.
  */
 export const getDotColor = (type: string): string => {
-    const tipoLower = normalizeEventType(type);
-    switch (tipoLower) {
-        case 'trabalho':
-            return 'bg-gray-800 dark:bg-zinc-500';
-        case 'férias':
-            return 'bg-green-800 dark:bg-green-500';
-        case 'festa':
-            return 'bg-purple-800 dark:bg-purple-500';
-        default:
-            return 'bg-blue-800 dark:bg-blue-500';
+    switch (normalizeEventType(type)) {
+        case 'trabalho': return 'bg-gray-500 dark:bg-zinc-400';
+        case 'festa':    return 'bg-purple-500 dark:bg-purple-400';
+        case 'outros':   return 'bg-blue-500 dark:bg-blue-400';
+        default:         return '';
     }
+};
+
+/**
+ * Returns number color to indicate feriado and férias.
+ */
+export const getDayNumberColor = (type: string): string => {
+    switch (normalizeEventType(type)) {
+        case 'feriado': return 'text-red-500 dark:text-red-400 font-semibold';
+        case 'férias':  return 'text-green-500 dark:text-green-400 font-semibold';
+        default:        return '';
+    }
+};
+
+/**
+ * Others types change color number to blue, but only if there are no feriado or férias events on the same day.
+ */
+export const isDateMarkerType = (type: string): boolean => {
+    const t = normalizeEventType(type);
+    return t === 'feriado' || t === 'férias';
 };
 
 // ============================================
