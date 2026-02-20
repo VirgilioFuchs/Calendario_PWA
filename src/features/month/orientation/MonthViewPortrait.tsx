@@ -11,7 +11,7 @@ import {
 } from '../../../shared/utils/dateHelpers.ts';
 import {
     getEventStyle,
-    hasHoliday
+    normalizeEventType
 } from '../../../shared/utils/eventHelpers.ts';
 
 
@@ -200,9 +200,17 @@ const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, 
                                         const isFirstDay = d === 1;
                                         const isTodayDay = isToday(year, mIdx, d);
                                         const allEvents = eventsByMonthAndDay[mIdx]?.[d] || []
+                                        const feriados = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'feriado');
+                                        const ferias = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'férias');
+                                        const dayNumberColorClass = feriados.length > 0
+                                            ? 'text-red-500 dark:text-red-400 font-semibold'
+                                            : ferias.length > 0
+                                                ? 'text-green-500 dark:text-green-400 font-semibold'
+                                                : isDayWeekend
+                                                    ? 'text-gray-300 dark:text-zinc-600'
+                                                    : 'text-gray-900 dark:text-zinc-300'
                                         const visibleEvents = allEvents.slice(0, 2);
                                         const remainingEvents = allEvents.length - 2;
-                                        const dayHasFeriado = hasHoliday(allEvents);
 
                                         return (
                                             <div
@@ -228,11 +236,7 @@ const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, 
                                                     text-sm font-sans leading-none flex items-center justify-center w-7 h-7 rounded-full
                                                     ${isTodayDay
                                                     ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
-                                                    : dayHasFeriado
-                                                        ? 'text-red-500 dark:text-red-400 font-semibold'
-                                                        : isDayWeekend
-                                                            ? 'text-gray-300 dark:text-zinc-600'
-                                                            : 'text-gray-900 dark:text-zinc-300'
+                                                    : dayNumberColorClass
                                                 }`}>
                                                     {d}
                                                 </span>

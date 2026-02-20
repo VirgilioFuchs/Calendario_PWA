@@ -28,19 +28,36 @@ export const normalizeEventType = (type: string | boolean | null | undefined): s
  */
 export const getEventStyle = (type: string): string => {
     const tipoLower = normalizeEventType(type);
+
     switch (tipoLower) {
         case 'trabalho':
-            return 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-700';
-        case 'férias':
-            return 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-950/45 dark:text-green-200 dark:border-green-800';
-        case 'feriado':
-            return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/45 dark:text-red-200 dark:border-red-800';
+            // Base: blue-300 (light) / blue-900 (dark)
+            // Fundo claro com texto escuro no Light | Fundo escuro com texto claro no Dark
+            return 'bg-[#eff6ff] text-[#1e3a8a] border border-[#93c5fd] dark:bg-[#1e3a8a]/40 dark:text-[#93c5fd] dark:border-[#1e3a8a]';
+
         case 'festa':
-            return 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-950/45 dark:text-purple-200 dark:border-purple-800';
+            // Base: purple-300 (light) / purple-900 (dark)
+            return 'bg-[#faf5ff] text-[#581c87] border border-[#d8b4fe] dark:bg-[#581c87]/40 dark:text-[#d8b4fe] dark:border-[#581c87]';
+
+        case 'feriado':
+            // Base: red-300 (light) / red-900 (dark)
+            return 'bg-[#fef2f2] text-[#7f1d1d] border border-[#fca5a5] dark:bg-[#7f1d1d]/40 dark:text-[#fca5a5] dark:border-[#7f1d1d]';
+
+        case 'férias':
+            // Base: green-300 (light) / green-900 (dark)
+            return 'bg-[#f0fdf4] text-[#14532d] border border-[#86efac] dark:bg-[#14532d]/40 dark:text-[#86efac] dark:border-[#14532d]';
+
+        case 'outros':
+            // Base: yellow-300 (light) / yellow-900 (dark)
+            return 'bg-[#fefce8] text-[#713f12] border border-[#fde047] dark:bg-[#713f12]/40 dark:text-[#fde047] dark:border-[#713f12]';
+
         default:
-            return 'bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/45 dark:text-blue-200 dark:border-blue-800';
+            // Base neutra (slate/gray)
+            return 'bg-[#f8fafc] text-[#334155] border border-[#cbd5e1] dark:bg-[#334155]/40 dark:text-[#cbd5e1] dark:border-[#334155]';
     }
 };
+
+
 
 /**
  * Returns Tailwind ring color classes for selected event highlighting.
@@ -66,9 +83,9 @@ export const getEventRingColor = (type: string): string => {
  */
 export const getDotColor = (type: string): string => {
     switch (normalizeEventType(type)) {
-        case 'trabalho': return 'bg-gray-500 dark:bg-zinc-400';
-        case 'festa':    return 'bg-purple-500 dark:bg-purple-400';
-        case 'outros':   return 'bg-blue-500 dark:bg-blue-400';
+        case 'trabalho': return 'bg-[#93c5fd] dark:bg-[#1e3a8a]';
+        case 'festa':    return 'bg-[#d8b4fe] dark:bg-[#581c87]';
+        case 'outros':   return 'bg-[#fde047] dark:bg-[#713f12]';
         default:         return '';
     }
 };
@@ -78,8 +95,8 @@ export const getDotColor = (type: string): string => {
  */
 export const getDayNumberColor = (type: string): string => {
     switch (normalizeEventType(type)) {
-        case 'feriado': return 'text-red-500 dark:text-red-400 font-semibold';
-        case 'férias':  return 'text-green-500 dark:text-green-400 font-semibold';
+        case 'feriado': return 'text-[#fca5a5] dark:text-[#7f1d1d] font-semibold';
+        case 'férias':  return 'text-[#86efac] dark:text-[#14532d] font-semibold';
         default:        return '';
     }
 };

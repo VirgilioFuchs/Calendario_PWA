@@ -1,7 +1,7 @@
 export const EVENT_LEGEND = [
-    { label: 'Trabalho', class: 'bg-gray-100 text-gray-700 border-l-4 border-gray-500 dark:bg-zinc-800/70 dark:text-zinc-100 dark:border-zinc-500' },
-    { label: 'Férias',   class: 'bg-green-100 text-green-800 border-l-4 border-green-600 dark:bg-green-950/55 dark:text-green-200 dark:border-green-500' },
-    { label: 'Feriado',  class: 'bg-red-100 text-red-800 border-l-4 border-red-500 dark:bg-red-950/55 dark:text-red-200 dark:border-red-500' },
-    { label: 'Festa',    class: 'bg-purple-100 text-purple-800 border-l-4 border-purple-500 dark:bg-purple-950/55 dark:text-purple-200 dark:border-purple-500' },
-    { label: 'Outros',    class: 'bg-blue-50 text-blue-800 border-l-4 border-blue-500 dark:bg-blue-950/55 dark:text-blue-200 dark:border-blue-500' },
+    { label: 'Trabalho', class: 'bg-[#eff6ff] text-[#1e3a8a] border border-[#93c5fd] dark:bg-[#1e3a8a]/40 dark:text-[#93c5fd] dark:border-[#1e3a8a]'},
+    { label: 'Férias',   class:'bg-[#faf5ff] text-[#581c87] border border-[#d8b4fe] dark:bg-[#581c87]/40 dark:text-[#d8b4fe] dark:border-[#581c87]' },
+    { label: 'Feriado',  class:'bg-[#fef2f2] text-[#7f1d1d] border border-[#fca5a5] dark:bg-[#7f1d1d]/40 dark:text-[#fca5a5] dark:border-[#7f1d1d]' },
+    { label: 'Festa',    class:'bg-[#f0fdf4] text-[#14532d] border border-[#86efac] dark:bg-[#14532d]/40 dark:text-[#86efac] dark:border-[#14532d]' },
+    { label: 'Outros',    class:'bg-[#fefce8] text-[#713f12] border border-[#fde047] dark:bg-[#713f12]/40 dark:text-[#fde047] dark:border-[#713f12]' },
 ]

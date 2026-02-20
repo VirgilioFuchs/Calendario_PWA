@@ -11,8 +11,9 @@ import {
 import {
     getDotColor,
     normalizeEventType,
-    hasHoliday, isDateMarkerType
+    isDateMarkerType
 } from '../../../shared/utils/eventHelpers.ts';
+import EventCapsule from "../../event/components/EventDots.tsx";
 
 interface MonthDetailProps {
     year: number;
@@ -222,10 +223,10 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                 : ferias.length > 0
                                                     ? 'text-green-500 dark:text-green-400 font-semibold'
                                                     : isDayWeekend
-                                                        ? 'text-gray-400 dark:text-zinc-500'
-                                                        : 'text-gray-700 dark:text-zinc-300';
-                                            const visibleDots = dotEvents.slice(0, 2);
-                                            const remainingDots = Math.max(dotEvents.length - 2, 0);
+                                                        ? 'text-gray-300 dark:text-zinc-600'
+                                                        : 'text-gray-900 dark:text-zinc-300';
+                                            const overflowEvents = dotEvents.slice(4)
+
 
 
                                             return (
@@ -240,9 +241,9 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                     {/*Destaque do dia de hoje*/}
                                                     <div
                                                         className={`
-                                                            flex items-center justify-center text-xs font-medium transition-all
+                                                            flex items-center justify-center text-xs font-medium transition-all h-5
                                                             ${isTodayDay
-                                                            ? 'w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
+                                                            ? 'w-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
                                                             : dayNumberColorClass
                                                         }
                                                         `}
@@ -250,25 +251,33 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                         {d}
                                                     </div>
 
-                                                    {/* Lista de Eventos */}
-                                                    {visibleDots.length > 0 && (
-                                                        <div
-                                                            className="flex flex-row gap-0.5 mt-3 justify-center items-center">
-                                                            {visibleDots.map((evt) => (
-                                                                <div
-                                                                    key={evt.feriado_id}
-                                                                    className={`w-1 h-1 rounded-full flex-shrink-0 ${getDotColor(evt.feriado_tipo)}`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex flex-col items-center gap-[3px] w-full pt-3">
 
-                                                    {remainingDots > 0 && (
-                                                        <span
-                                                            className="text-[0.75rem] leading-none text-gray-400 dark:text-zinc-500 mt-[0.89rem]">
-                                                                +{remainingDots}
-                                                        </span>
-                                                    )}
+                                                        {[...feriados, ...ferias].length > 0 && dotEvents.length === 0 && (
+                                                            [...feriados, ...ferias].map((evt, i) => (
+                                                                <span
+                                                                    key={`marker-${i}`}
+                                                                    className={`inline-block shrink-0 rounded-full ${getDotColor(evt.feriado_tipo)}`}
+                                                                    style={{ width: 7, height: 7 }}
+                                                                    title={evt.feriado_titulo ?? evt.feriado_tipo}
+                                                                />
+                                                            ))
+                                                        )}
+
+                                                        {/* Cápsula elástica */}
+                                                        {dotEvents.length > 0 && (
+                                                            <EventCapsule events={dotEvents} />
+                                                        )}
+
+                                                        <div className="flex flex-col pt-1.5">
+                                                            {/* Overflow */}
+                                                            {overflowEvents.length > 0 && (
+                                                                <span className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 leading-none">
+                                                                    +{overflowEvents.length}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -279,7 +288,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                     </div>
                 </div>
 
-                {/* ✅ LADO DIREITO - 40% - Título do Mês */}
+                {/* ✅ LADO DIREITO - 50% - Título do Mês */}
                 <div className="w-[50%] flex flex-col items-center justify-center bg-white dark:bg-zinc-900">
                     <div className="text-center px-4">
                         <h1 className="text-7xl font-bold text-gray-900 dark:text-white tracking-tight transition-all duration-300">
