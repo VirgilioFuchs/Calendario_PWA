@@ -6,12 +6,13 @@ import {
     isToday,
     getDayOfWeekInGrid,
     isWeekend,
-    parseLocalDate
+    parseLocalDate, formatTimeString
 } from '../../../shared/utils/dateHelpers.ts';
 import {
     getDotColor,
     normalizeEventType,
-    isDateMarkerType
+    isDateMarkerType,
+    getEventStyle
 } from '../../../shared/utils/eventHelpers.ts';
 import EventCapsule from "../../event/components/EventDots.tsx";
 
@@ -288,12 +289,85 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                     </div>
                 </div>
 
-                {/* ✅ LADO DIREITO - 50% - Título do Mês */}
-                <div className="w-[50%] flex flex-col items-center justify-center bg-white dark:bg-zinc-900">
-                    <div className="text-center px-4">
-                        <h1 className="text-7xl font-bold text-gray-900 dark:text-white tracking-tight transition-all duration-300">
+                {/* ✅ LADO DIREITO - 50% */}
+                <div className="w-[50%] flex flex-col h-full overflow-hidden border-l border-gray-200 dark:border-zinc-800">
+
+                    {/* Header fixo */}
+                    <div className="shrink-0 px-6 py-2 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950">
+                        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white tracking-tight transition-all duration-300">
                             {MONTH_NAMES[visibleMonthIdx]}
                         </h1>
+                    </div>
+
+                    {/* Lista — ocupa tudo que sobra abaixo do header */}
+                    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 py-3 bg-gray-50 dark:bg-zinc-900">
+
+                        {Object.entries(eventsByMonthAndDay[visibleMonthIdx] || {})
+                            .sort(([a], [b]) => Number(a) - Number(b))
+                            .map(([day, events]) => {
+                                const date    = new Date(year, visibleMonthIdx, Number(day));
+                                const weekDay = date.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
+
+                                return (
+                                    <div key={day} className="flex flex-col gap-2 px-4">
+
+                                        {/* Cabeçalho do dia */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
+                                                {weekDay} — {String(day).padStart(2, '0')}
+                                            </span>
+                                            <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-900" />
+                                        </div>
+
+                                        {/* Cards */}
+                                        {events.map((evt) => {
+                                            const type      = normalizeEventType(evt.feriado_tipo);
+                                            const isDayLong = !evt.feriado_inicio && !evt.feriado_fim;
+
+                                            return (
+                                                <div
+                                                    key={evt.feriado_id}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${getEventStyle(type)}`}
+                                                >
+                                                    {isDayLong ? (
+                                                        <>
+                                                            <span className={`text-xs font-bold uppercase tracking-wide`}>
+                                                                {evt.feriado_tipo?.toUpperCase() ?? 'EVENTO'}
+                                                            </span>
+                                                            <span className="text-xs font-semibold  uppercase tracking-wide">
+                                                                DIA INTEIRO
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className={`text-xs font-bold uppercase tracking-wide`}>
+                                                                {evt.feriado_tipo?.toUpperCase() ?? 'EVENTO'}
+                                                            </span>
+                                                            <div className="flex flex-col items-end gap-0.5">
+                                                                <span className="text-xs font-semibold">
+                                                                    {formatTimeString(evt.feriado_inicio)}
+                                                                </span>
+                                                                <span className="text-xs opacity-60">
+                                                                    {formatTimeString(evt.feriado_fim)}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+
+                        {/* Estado vazio */}
+                        {Object.keys(eventsByMonthAndDay[visibleMonthIdx] || {}).length === 0 && (
+                            <div className="flex-1 flex items-center justify-center">
+                                <span className="text-xs text-gray-400 dark:text-zinc-600 uppercase tracking-widest">
+                                    Nenhum evento
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

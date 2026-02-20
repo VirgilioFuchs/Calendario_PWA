@@ -15,9 +15,11 @@ export const timeStringToDecimal = (timeStr: string | null): number => {
 /**
  * Formats a time string "HH:MM:SS" to "HH:MM".
  */
-export const formatTimeString = (timeStr: string | null): string => {
-    if (!timeStr) return '--:--';
-    return timeStr.substring(0, 5);
+export const formatTimeString = (timeStr: string | null | undefined): string => {
+    if (!timeStr || timeStr.trim() === '') return '';
+    const [h, m] = timeStr.split(':');
+    if (!h || !m) return timeStr;
+    return `${h.padStart(2, '0')}:${m}`;
 };
 
 /**
