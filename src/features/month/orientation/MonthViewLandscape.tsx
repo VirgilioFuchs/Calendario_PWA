@@ -6,7 +6,7 @@ import {
     isToday,
     getDayOfWeekInGrid,
     isWeekend,
-    parseLocalDate, formatTimeString
+    parseLocalDate, formatTimeString, timeStringToDecimal
 } from '../../../shared/utils/dateHelpers.ts';
 import {
     getDotColor,
@@ -15,12 +15,15 @@ import {
     getEventStyle
 } from '../../../shared/utils/eventHelpers.ts';
 import EventCapsule from "../../event/components/EventDots.tsx";
+import {EVENT_LEGEND} from "../../../shared/constants/eventLegend.ts";
 
 interface MonthDetailProps {
     year: number;
     monthIdx: number;
+    selectedDay: number;
     onBack: () => void;
     onDayClick: (monthIdx: number, day: number, react?: DOMRect) => void;
+    onEventClick?: (event: CalendarEvent, monthIdx: number, day: number) => void;
 }
 
 type EventsByMonthAndDay = {
@@ -29,11 +32,21 @@ type EventsByMonthAndDay = {
     };
 };
 
-const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick}) => {
+const MonthViewLandscape: React.FC<MonthDetailProps> = ({
+                                                            year,
+                                                            monthIdx,
+                                                            onBack,
+                                                            onDayClick,
+                                                            selectedDay,
+                                                            onEventClick,
+}) => {
     // Estado para o título fixo (Scroll Spy)
     const [visibleMonthIdx, setVisibleMonthIdx] = useState(monthIdx);
     const months = Array.from({length: 12}, (_, i) => i);
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
+    const [selectedClickedDay, setSelectedClickedDay] = useState<number | null>(selectedDay);
+    const [selectedClickedMonthIdx, setSelectedClickedMonthIdx] = useState<number>(monthIdx);
+    const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dia'>('eventos');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const isInitialScroll = useRef(true);
 
@@ -82,13 +95,13 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return; // ignora quem saiu, só processa quem entrou
+                    if (!entry.isIntersecting) return;
 
                     const idx = Number(
                         (entry.target as HTMLElement).dataset.monthIndex
                     );
                     if (!Number.isNaN(idx)) {
-                        setVisibleMonthIdx(idx); // atualiza o mês visível
+                        setVisibleMonthIdx(idx);
                     }
                 });
             },
@@ -124,14 +137,48 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
         return () => clearTimeout(timeoutId)
     }, [containerRef, monthIdx]);
 
-    const handleDayClick = (e: React.MouseEvent, mIdx: number, d: number) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        onDayClick(mIdx, d, rect);
+    useEffect(() => {
+        containerRef.current?.scrollTo({top: 0, behavior: 'smooth'});
+    }, [activeTab]);
+
+    // Ordena eventos do dia pelo horário
+    const sortedDayEvents = useMemo(() => {
+        if (selectedClickedDay === null) return [];
+        const events = eventsByMonthAndDay[selectedClickedMonthIdx]?.[selectedClickedDay] || [];
+        return [...events].sort((a, b) => {
+            if (a.feriado_inicio && b.feriado_inicio) {
+                return timeStringToDecimal(a.feriado_inicio) - timeStringToDecimal(b.feriado_inicio);
+            }
+            if (!a.feriado_inicio) return 1;
+            if (!b.feriado_inicio) return -1;
+            return 0;
+        });
+    }, [eventsByMonthAndDay, selectedClickedDay, selectedClickedMonthIdx]);
+
+    // Na troca do mês, o index vai para o dia 1
+    useEffect(() => {
+        if (isInitialScroll.current) return;
+        setSelectedClickedDay(1);
+        setSelectedClickedMonthIdx(visibleMonthIdx);
+    }, [visibleMonthIdx]);
+
+    const handleDayClick = (_e: React.MouseEvent, mIdx: number, d: number) => {
+        setSelectedClickedDay(d);
+        setSelectedClickedMonthIdx(mIdx);
+        setActiveTab('dia');
+    };
+
+    const handleEventClick = (evt: CalendarEvent) => {
+        const eventDate = parseLocalDate(evt.feriado_data);
+        const evtDay = eventDate.getDate();
+        const evtMonth = eventDate.getMonth();
+
+        onEventClick?.(evt, evtMonth, evtDay);
     };
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-zinc-950/95">
-            {/* HEADER FIXO - Original mantido */}
+            {/* HEADER FIXO*/}
             <div
                 className="z-30 shadow-sm relative transition-all duration-300
                 bg-white/95 backdrop-blur-sm border-b border-gray-300
@@ -146,7 +193,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                         <span className="text-base font-semibold leading-none pb-0.5">{year}</span>
                     </button>
 
-                    {/* Desenvolver a pesquisa de eventos da LUPA - Esperando pela API */}
+                    {/* Desenvolver a pesquisa de eventos da LUPA */}
                     <button
                         className="p-2 -mr-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -158,10 +205,10 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                 </div>
             </div>
 
-            {/* LAYOUT 50/50 - Abaixo do header */}
+            {/* LAYOUT 50/50 */}
             <div className="flex flex-1 overflow-hidden">
-                {/* ✅ LADO ESQUERDO - 50% - Calendário */}
-                <div className="w-[50%] flex flex-col border-r border-gray-200 dark:border-zinc-800">
+                {/* LADO ESQUERDO - 50% */}
+                <div className="w-1/2 flex flex-col border-r border-gray-200 dark:border-zinc-800">
                     {/* Dias da Semana */}
                     <div
                         className="flex-shrink-0 grid grid-cols-7 bg-gray-100 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
@@ -206,7 +253,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                         {gridData.leadingBlanks.map((b) => (
                                             <div
                                                 key={`blank-${b}`}
-                                                className="min-h-[4.5rem] border-t border-gray-100 dark:border-zinc-800 bg-gray-50/30 dark:bg-zinc-900/20"
+                                                className="min-h-[4rem] border-t border-gray-100 dark:border-zinc-800 bg-gray-50/30 dark:bg-zinc-900/20"
                                             />
                                         ))}
 
@@ -215,6 +262,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                             const dayOfWeek = getDayOfWeekInGrid(gridData.firstDayIdx, d);
                                             const isDayWeekend = isWeekend(dayOfWeek);
                                             const isTodayDay = isToday(year, mIdx, d);
+                                            const isSelected = d === selectedClickedDay && mIdx === selectedClickedMonthIdx;
                                             const allEvents = eventsByMonthAndDay[mIdx]?.[d] || [];
                                             const feriados = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'feriado');
                                             const ferias = allEvents.filter(e => normalizeEventType(e.feriado_tipo) === 'férias');
@@ -229,12 +277,11 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                             const overflowEvents = dotEvents.slice(4)
 
 
-
                                             return (
                                                 <div
                                                     key={d}
                                                     onClick={(e) => handleDayClick(e, mIdx, d)}
-                                                    className={`min-h-[4.4rem] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
+                                                    className={`min-h-[4.2rem] flex flex-col items-center justify-start px-1 pt-2 border-t relative transition-colors cursor-pointer active:scale-[0.98]
                                                         border-gray-100 dark:border-zinc-800
                                                         hover:bg-gray-50 dark:hover:bg-zinc-900
                                                         ${isDayWeekend ? 'bg-gray-50/50 dark:bg-zinc-900/30' : 'bg-white dark:bg-zinc-950'}`}
@@ -242,9 +289,11 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                     {/*Destaque do dia de hoje*/}
                                                     <div
                                                         className={`
-                                                            flex items-center justify-center text-xs font-medium transition-all h-5
-                                                            ${isTodayDay
-                                                            ? 'w-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-bold ring-2 ring-black dark:ring-white'
+                                                            flex items-center justify-center text-xs font-medium transition-all h-6 w-6 rounded-full duration-200
+                                                            ${isSelected
+                                                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                                                            : isTodayDay
+                                                            ? ' bg-gray-200 text-gray-900 border border-gray-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700'
                                                             : dayNumberColorClass
                                                         }
                                                         `}
@@ -259,7 +308,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                                                                 <span
                                                                     key={`marker-${i}`}
                                                                     className={`inline-block shrink-0 rounded-full ${getDotColor(evt.feriado_tipo)}`}
-                                                                    style={{ width: 7, height: 7 }}
+                                                                    style={{width: 7, height: 7}}
                                                                     title={evt.feriado_titulo ?? evt.feriado_tipo}
                                                                 />
                                                             ))
@@ -267,13 +316,14 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
 
                                                         {/* Cápsula elástica */}
                                                         {dotEvents.length > 0 && (
-                                                            <EventCapsule events={dotEvents} />
+                                                            <EventCapsule events={dotEvents}/>
                                                         )}
 
-                                                        <div className="flex flex-col pt-1.5">
+                                                        <div className="flex flex-col py-1">
                                                             {/* Overflow */}
                                                             {overflowEvents.length > 0 && (
-                                                                <span className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 leading-none">
+                                                                <span
+                                                                    className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 leading-none">
                                                                     +{overflowEvents.length}
                                                                 </span>
                                                             )}
@@ -289,85 +339,199 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({year, monthIdx, onBack,
                     </div>
                 </div>
 
-                {/* ✅ LADO DIREITO - 50% */}
-                <div className="w-[50%] flex flex-col h-full overflow-hidden border-l border-gray-200 dark:border-zinc-800">
+                {/*  LADO DIREITO - 50% */}
+                <div
+                    className="w-1/2 flex flex-col h-full overflow-hidden border-l border-gray-200 dark:border-zinc-950">
 
                     {/* Header fixo */}
-                    <div className="shrink-0 px-6 py-2 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950">
+                    <div
+                        className="shrink-0 px-6 py-2 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950">
                         <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white tracking-tight transition-all duration-300">
                             {MONTH_NAMES[visibleMonthIdx]}
                         </h1>
                     </div>
 
-                    {/* Lista — ocupa tudo que sobra abaixo do header */}
-                    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 py-3 bg-gray-50 dark:bg-zinc-900">
+                    <div className="flex-1 overflow-y-auto p-3">
+                        {activeTab === 'eventos' ? (
+                            <div
+                                className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 py-3 bg-gray-50 dark:bg-zinc-950">
+                                {Object.entries(eventsByMonthAndDay[visibleMonthIdx] || {})
+                                    .sort(([a], [b]) => Number(a) - Number(b))
+                                    .map(([day, events]) => {
+                                        const date = new Date(year, visibleMonthIdx, Number(day));
+                                        const weekDay = date.toLocaleDateString('pt-BR', {weekday: 'long'}).toUpperCase();
 
-                        {Object.entries(eventsByMonthAndDay[visibleMonthIdx] || {})
-                            .sort(([a], [b]) => Number(a) - Number(b))
-                            .map(([day, events]) => {
-                                const date    = new Date(year, visibleMonthIdx, Number(day));
-                                const weekDay = date.toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase();
+                                        return (
+                                            <div key={day} className="flex flex-col gap-2 px-4">
 
-                                return (
-                                    <div key={day} className="flex flex-col gap-2 px-4">
-
-                                        {/* Cabeçalho do dia */}
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
-                                                {weekDay} — {String(day).padStart(2, '0')}
+                                                {/* Cabeçalho do dia */}
+                                                <div className="flex items-center gap-2">
+                                            <span
+                                                className="text-xs font-bold text-gray-900 dark:text-white tracking-wide">
+                                                {weekDay} — Dia {String(day).padStart(2, '0')}
                                             </span>
-                                            <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-900" />
-                                        </div>
+                                                    <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-500"/>
+                                                </div>
 
-                                        {/* Cards */}
-                                        {events.map((evt) => {
-                                            const type      = normalizeEventType(evt.feriado_tipo);
-                                            const isDayLong = !evt.feriado_inicio && !evt.feriado_fim;
+                                                {/* Cards */}
+                                                {events.map((evt) => {
+                                                    const type = normalizeEventType(evt.feriado_tipo);
+                                                    const isDayLong = !evt.feriado_inicio && !evt.feriado_fim;
 
-                                            return (
-                                                <div
-                                                    key={evt.feriado_id}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${getEventStyle(type)}`}
-                                                >
-                                                    {isDayLong ? (
-                                                        <>
-                                                            <span className={`text-xs font-bold uppercase tracking-wide`}>
+                                                    return (
+                                                        <div
+                                                            key={evt.feriado_id}
+                                                            onClick={() => handleEventClick(evt)}
+                                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg ${getEventStyle(type)}`}
+                                                        >
+                                                            {isDayLong ? (
+                                                                <>
+                                                            <span
+                                                                className={`text-xs font-bold uppercase tracking-wide`}>
                                                                 {evt.feriado_tipo?.toUpperCase() ?? 'EVENTO'}
                                                             </span>
-                                                            <span className="text-xs font-semibold  uppercase tracking-wide">
+                                                                    <span
+                                                                        className="text-xs font-semibold  uppercase tracking-wide">
                                                                 DIA INTEIRO
                                                             </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span className={`text-xs font-bold uppercase tracking-wide`}>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                            <span
+                                                                className={`text-xs font-bold uppercase tracking-wide`}>
                                                                 {evt.feriado_tipo?.toUpperCase() ?? 'EVENTO'}
                                                             </span>
-                                                            <div className="flex flex-col items-end gap-0.5">
+                                                                    <div className="flex flex-col items-end gap-0.5">
                                                                 <span className="text-xs font-semibold">
                                                                     {formatTimeString(evt.feriado_inicio)}
                                                                 </span>
-                                                                <span className="text-xs opacity-60">
+                                                                        <span className="text-xs opacity-60">
                                                                     {formatTimeString(evt.feriado_fim)}
                                                                 </span>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })}
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })}
 
-                        {/* Estado vazio */}
-                        {Object.keys(eventsByMonthAndDay[visibleMonthIdx] || {}).length === 0 && (
-                            <div className="flex-1 flex items-center justify-center">
+                                {/* Estado vazio */}
+                                {Object.keys(eventsByMonthAndDay[visibleMonthIdx] || {}).length === 0 && (
+                                    <div className="flex-1 flex items-center justify-center">
                                 <span className="text-xs text-gray-400 dark:text-zinc-600 uppercase tracking-widest">
                                     Nenhum evento
                                 </span>
+                                    </div>
+                                )}
+                            </div>
+                        ) : activeTab === 'dia' ? (
+                            <div className="flex flex-col gap-2">
+
+                                {/* Título do dia selecionado */}
+                                {selectedClickedDay !== null && (
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">
+                                            {new Date(year, selectedClickedMonthIdx, selectedClickedDay)
+                                                .toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                                        </p>
+
+                                        <button
+                                            onClick={() => onDayClick?.(selectedClickedMonthIdx, selectedClickedDay)}
+                                            className="text-xs font-bold text-black dark:text-white shrink-0 ml-2"
+                                        >
+                                            Ir para o dia
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Lista de eventos */}
+                                {sortedDayEvents.length === 0 ? (
+                                    <p className="text-sm text-gray-400 dark:text-zinc-500 text-center mt-8">
+                                        Nenhum evento neste dia
+                                    </p>
+                                ) : (
+                                    sortedDayEvents.map((evt) => {
+                                        const isDayLong = !evt.feriado_inicio && !evt.feriado_fim;
+                                        return (
+                                            <div
+                                                key={evt.feriado_id}
+                                                onClick={() => handleEventClick(evt)}
+                                                className={`rounded-lg p-2.5 border-l-4 ${getEventStyle(evt.feriado_tipo)}`}
+                                            >
+                                                <p className="text-xs font-semibold leading-snug">{evt.feriado_titulo}</p>
+                                                {isDayLong ? (
+                                                    <p className="text-xs opacity-60 mt-0.5">Dia Inteiro</p>
+                                                ) : evt.feriado_inicio ? (
+                                                    <p className="text-xs opacity-60 mt-0.5">
+                                                        {formatTimeString(evt.feriado_inicio)}
+                                                        {evt.feriado_fim && ` - ${formatTimeString(evt.feriado_fim)}`}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200 mb-3 text-center">
+                                        Tipos de Eventos
+                                    </h3>
+                                </div>
+                                <div className="space-y-2">
+                                    {EVENT_LEGEND.map((item, idx) => (
+                                        <div key={idx} className={`rounded-lg p-3 border-l-4 ${item.class}`}>
+                                            <div className="font-medium text-sm">{item.label}</div>
+                                            <div className="text-xs opacity-70 mt-1">
+                                                Cor padrão para eventos de {item.label.toLowerCase()}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
+                    </div>
+                    {/*Navigation Bottom*/}
+                    <div className="px-6 pb-1.5 pt-2">
+                        <div
+                            className="bg-white dark:bg-zinc-800 rounded-md shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
+                            <div className="flex">
+                                <button
+                                    onClick={() => setActiveTab('legendas')}
+                                    className={`flex-1 py-1.5 text-xs font-medium transition-colors border-r border-gray-200 dark:border-zinc-700
+                                            ${activeTab === 'legendas'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                        : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                    }`}
+                                >
+                                    Legendas
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('eventos')}
+                                    className={`flex-1 py-1.5 text-xs font-medium transition-colors
+                                            ${activeTab === 'eventos'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                        : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                    }`}
+                                >
+                                    Eventos
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('dia')}
+                                    className={`flex-1 py-1.5 text-xs font-medium transition-colors
+                                            ${activeTab === 'dia'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-md'
+                                        : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                                    }`}
+                                >
+                                    Dia
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

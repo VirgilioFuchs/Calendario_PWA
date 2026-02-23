@@ -25,6 +25,7 @@ interface DayViewProps {
     currentYear: number;
     currentMonthIdx: number;
     selectedDay: number;
+    initialEventId?: number | null;
     onBack: () => void;
     onEventClick: (event: CalendarEvent) => void;
     onDayChange?: (day: number, monthIdx: number, year: number) => void;
@@ -39,6 +40,7 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
                                              selectedDay,
                                              onBack,
                                              onDayChange,
+                                             initialEventId = null,
                                          }) => {
     const containerRef = useDragScroll<HTMLDivElement>(); // Hook para arrastar e rolar pelo mouse do computador
     const hours = useMemo(() => Array.from({length: 17}, (_, i) => i + 7), []);
@@ -47,7 +49,7 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [monthEvents, setMonthEvents] = useState<CalendarEvent[]>([]);
     const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dias'>('eventos');
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(initialEventId);
     const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const panelScrollRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +102,23 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
             });
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (!initialEventId || events.length === 0) return;
+
+        const timeoutId = setTimeout(() => {
+            const eventElement = eventRefs.current.get(initialEventId);
+            if (eventElement && containerRef.current) {
+                eventElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest',
+                });
+            }
+        }, 150);
+
+        return () => clearTimeout(timeoutId);
+    }, [events, initialEventId]);
 
     const handleEventClickInternal = (evt: CalendarEvent) => {
         setSelectedEventId(evt.feriado_id);

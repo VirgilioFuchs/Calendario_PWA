@@ -74,7 +74,7 @@ export const getEventRingColor = (type: string): string => {
         case 'festa':
             return 'ring-purple-500 dark:ring-purple-500';
         default:
-            return 'ring-blue-500 dark:ring-blue-500';
+            return 'ring-[#fde047] dark:ring-[#713f12]';
     }
 };
 

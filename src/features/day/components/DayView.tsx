@@ -11,6 +11,7 @@ interface DayControllerProps {
     onChangeDate: (day: number, monthIdx: number, year: number) => void;
     onEventClick: (event: CalendarEvent) => void;
     orientation: 'portrait' | 'landscape';
+    initialEventId?: number | null;
 }
 
 const DayView: React.FC<DayControllerProps> = ({
@@ -21,6 +22,7 @@ const DayView: React.FC<DayControllerProps> = ({
     onChangeDate,
     onEventClick,
     orientation,
+    initialEventId,
 }) => {
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
@@ -105,6 +107,7 @@ const DayView: React.FC<DayControllerProps> = ({
                     onBack={onBack}
                     onEventClick={onEventClick}
                     onDayChange={onChangeDate}
+                    initialEventId={initialEventId}
                 />
             ) : (
                 <DayViewPortrait

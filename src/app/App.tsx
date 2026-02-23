@@ -24,6 +24,7 @@ const App: React.FC = () => {
     // Calendário Estado
     const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
     const [previousNavLevel, setPreviousNavLevel] = useState<'month_detail' | 'day_detail'>('month_detail');
+    const [initialEventId, setInitialEventId] = useState<number | null>(null);
     const [year, setYear] = useState(fullYear);
     const [selectedMonthIdx, setSelectedMonthIdx] = useState(month);
     const [selectedDay, setSelectedDay] = useState(day);
@@ -209,6 +210,7 @@ const App: React.FC = () => {
             selectedDay
         });
 
+        setInitialEventId(null);
         setSelectedMonthIdx(monthIdx);
         setSelectedDay(day);
         setAnimDirection('forward');
@@ -235,12 +237,23 @@ const App: React.FC = () => {
         setSelectedEvent(event);
         setPreviousNavLevel(navLevel === 'month_detail' ? 'month_detail' : 'day_detail');
         setNavLevel('event_detail');
-    }
+    };
 
     const handleBackFromEvent = () => {
         setNavLevel(previousNavLevel);
         setSelectedEvent(null);
-    }
+    };
+
+    const handleEventClickFromMonth = (
+        event: CalendarEvent,
+        mIdx: number,
+        day: number
+    ) => {
+        setInitialEventId(event.feriado_id);
+        setSelectedMonthIdx(mIdx);
+        setSelectedDay(day);
+        setNavLevel('day_detail');
+    };
 
     // Lógica de Exibição
     const showFooter = navLevel === 'day_detail';
@@ -292,8 +305,10 @@ const App: React.FC = () => {
                             <MonthView
                                 year={year}
                                 monthIdx={selectedMonthIdx}
+                                selectedDay={selectedDay}
                                 onBack={handleBackToYear}
                                 onDayClick={handleDaySelect}
+                                onEventClick={handleEventClickFromMonth}
                                 orientation={orientation}
                             />
                         </motion.div>
@@ -318,6 +333,7 @@ const App: React.FC = () => {
                                 onChangeDate={handleChangeDate}
                                 onEventClick={handleEventSelect}
                                 orientation={orientation}
+                                initialEventId={initialEventId}
                             />
                         </motion.div>
                     )}
