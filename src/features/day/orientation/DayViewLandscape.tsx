@@ -20,6 +20,9 @@ import {
     getDayOfWeekInGrid,
     parseLocalDate,
 } from '../../../shared/utils/dateHelpers.ts';
+import LoadingOverlay from "../../../components/common/LoadingOverlay.tsx";
+import {withTimeout} from "../../../shared/utils/withTimeout.tsx";
+import ErrorBox from "../../../components/common/ErrorBox.tsx";
 
 interface DayViewProps {
     currentYear: number;
@@ -32,6 +35,8 @@ interface DayViewProps {
 }
 
 const HOUR_HEIGHT = 60;
+
+type FetchStatus = 'loading' | 'idle' | 'error' | 'timeout';
 
 //Campo de vizualização de dias
 const DayViewLandscape: React.FC<DayViewProps> = ({
@@ -52,6 +57,8 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
     const [selectedEventId, setSelectedEventId] = useState<number | null>(initialEventId);
     const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const panelScrollRef = useRef<HTMLDivElement>(null);
+    const [status, setStatus] = useState<FetchStatus>('loading')
+    const [retryKey, setRetryKey] = useState(0);
 
     // Eventos dia inteiro
     const allDayEvents = useMemo(() =>
@@ -67,33 +74,54 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
 
     // Eventos da timeline (do dia)
     useEffect(() => {
+        let cancelled = false;
+
         const fetchDayEvents = async () => {
+            setStatus('loading');
             try {
                 console.log('Buscando eventos:', {currentYear, currentMonthIdx, selectedDay});
                 const data = await eventsApi.getEventsByDay(currentYear, currentMonthIdx, selectedDay);
                 console.log('Eventos retornados:', data);
-                setEvents(data);
+                const allData = await withTimeout(Promise.all(data), 15_000);
+                if (!cancelled) {
+                    setEvents(allData.flat());
+                    setStatus('idle');
+                }
             } catch (error) {
+                const isTimeout = error instanceof Error && error.message === 'TIMEOUT';
+                setStatus(isTimeout ? 'timeout' : 'error');
                 console.error('Erro ao carregar eventos:', error);
                 setEvents([]);
             }
         };
         fetchDayEvents();
-    }, [currentYear, currentMonthIdx, selectedDay]);
+        return () => { cancelled = true; };
+    }, [currentYear, currentMonthIdx, selectedDay, retryKey]);
 
     // Eventos do mês inteiro da aba dias
     useEffect(() => {
+        let cancelled = false;
+
         const fetchMonthEvents = async () => {
+            setStatus('loading');
             try {
                 const data = await eventsApi.getEventsByMonth(currentYear, currentMonthIdx);
-                setMonthEvents(data);
+                const allData = await withTimeout(Promise.all(data), 15_000);
+                if (!cancelled) {
+                    setMonthEvents(allData.flat());
+                    setStatus('idle');
+                }
             } catch (error) {
+                const isTimeout = error instanceof Error && error.message === 'TIMEOUT';
+                setStatus(isTimeout ? 'timeout' : 'error');
                 console.error('Erro ao carregar eventos do mês:', error);
                 setMonthEvents([]);
             }
         };
         fetchMonthEvents();
-    }, [currentYear, currentMonthIdx]);
+
+        return () => { cancelled = true; };
+    }, [currentYear, currentMonthIdx, retryKey]);
 
     useEffect(() => {
         if (panelScrollRef.current) {
@@ -120,22 +148,6 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
         return () => clearTimeout(timeoutId);
     }, [events, initialEventId]);
 
-    const handleEventClickInternal = (evt: CalendarEvent) => {
-        setSelectedEventId(evt.feriado_id);
-        setActiveTab('eventos');
-
-        setTimeout(() => {
-            const eventElement = eventRefs.current.get(evt.feriado_id);
-            if (eventElement) {
-                eventElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                    inline: 'nearest'
-                });
-            }
-            }, 100);
-    };
-
     const sortedEvents = useMemo(() => {
         return [...events].sort((a, b) => {
             // Se ambos têm horário de início
@@ -153,8 +165,39 @@ const DayViewLandscape: React.FC<DayViewProps> = ({
         });
     }, [events]);
 
+    const handleEventClickInternal = (evt: CalendarEvent) => {
+        setSelectedEventId(evt.feriado_id);
+        setActiveTab('eventos');
+
+        setTimeout(() => {
+            const eventElement = eventRefs.current.get(evt.feriado_id);
+            if (eventElement) {
+                eventElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            }
+            }, 100);
+    };
+
+    const handleRetry    = () => setRetryKey(k => k + 1);
+    const handleContinue = () => setStatus('idle');
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50 max-w-[100vw]">
+
+            {/* Tela de carregamento */}
+            <LoadingOverlay isLoading={status === 'loading'} />
+
+            {(status === 'error' || status === 'timeout') && (
+                <ErrorBox
+                    isTimeout={status === 'timeout'}
+                    onRetry={handleRetry}
+                    onContinue={handleContinue}
+                />
+            )}
+
             {/* HEADER */}
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 sticky top-0 z-20 backdrop-blur-sm
                 bg-white/90 border-gray-200 hover:bg-gray-50

@@ -10,6 +10,9 @@ import {
     timeStringToDecimal,
     formatDecimalTime,
 } from '../../../shared/utils/dateHelpers.ts';
+import LoadingOverlay from "../../../components/common/LoadingOverlay.tsx";
+import {withTimeout} from "../../../shared/utils/withTimeout.tsx";
+import ErrorBox from "../../../components/common/ErrorBox.tsx";
 
 interface DayViewPortraitProps {
     currentYear: number;
@@ -21,6 +24,8 @@ interface DayViewPortraitProps {
 }
 
 const HOUR_HEIGHT = 60;
+
+type FetchStatus = 'loading' | 'idle' | 'error' | 'timeout';
 
 const DayViewPortrait: React.FC<DayViewPortraitProps> = ({
                                                              currentYear,
@@ -35,6 +40,8 @@ const DayViewPortrait: React.FC<DayViewPortraitProps> = ({
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const eventRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const [status, setStatus] = useState<FetchStatus>('loading')
+    const [retryKey, setRetryKey] = useState(0);
 
     // Eventos dia inteiro
     const allDayEvents = useMemo(() =>
@@ -50,29 +57,54 @@ const DayViewPortrait: React.FC<DayViewPortraitProps> = ({
 
     // Eventos da timeline (do dia)
     useEffect(() => {
+        let cancelled = false;
+
         const fetchDayEvents = async () => {
+            setStatus('loading');
             try {
                 console.log('Buscando eventos:', {currentYear, currentMonthIdx, selectedDay});
                 const data = await eventsApi.getEventsByDay(currentYear, currentMonthIdx, selectedDay);
                 console.log('Eventos retornados:', data);
-                setEvents(data);
+                const allData = await withTimeout(Promise.all(data), 15_000);
+                if (!cancelled) {
+                    setEvents(allData.flat());
+                    setStatus('idle');
+                }
             } catch (error) {
+                const isTimeout = error instanceof Error && error.message === 'TIMEOUT';
+                setStatus(isTimeout ? 'timeout' : 'error');
                 console.error('Erro ao carregar eventos:', error);
                 setEvents([]);
             }
         };
         fetchDayEvents();
-    }, [currentYear, currentMonthIdx, selectedDay]);
+        return () => { cancelled = true; };
+    }, [currentYear, currentMonthIdx, selectedDay, retryKey]);
 
     const handleEventClickInternal = (evt: CalendarEvent) => {
         setSelectedEventId(evt.feriado_id);
         onEventClick(evt);
     };
 
+    const handleRetry    = () => setRetryKey(k => k + 1);
+    const handleContinue = () => setStatus('idle');
+
     return (
         <div
             className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 h-full relative z-50 max-w-[100vw]"
         >
+            {/* Tela de Carregamento */}
+            <LoadingOverlay isLoading={status === 'loading'}/>
+
+            {/* Carregamento de erro/timeout */}
+            {(status === 'error' || status === 'timeout') && (
+                <ErrorBox
+                    isTimeout={status === 'timeout'}
+                    onRetry={handleRetry}
+                    onContinue={handleContinue}
+                />
+            )}
+
             {/* HEADER */}
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0 sticky top-0 z-20 backdrop-blur-sm
                 bg-white/90 border-gray-200 hover:bg-gray-50

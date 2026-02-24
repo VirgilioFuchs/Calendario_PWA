@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Seus estilos globais extras */
-body {
-    margin: 0;
-    background-color: #ffffff; /* Teste para ver se muda algo */
-}
 
 .scrollbar-hide::-webkit-scrollbar {
     display: none;

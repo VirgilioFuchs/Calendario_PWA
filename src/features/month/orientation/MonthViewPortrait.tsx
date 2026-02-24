@@ -13,6 +13,9 @@ import {
     getEventStyle,
     normalizeEventType
 } from '../../../shared/utils/eventHelpers.ts';
+import LoadingOverlay from "../../../components/common/LoadingOverlay.tsx";
+import { withTimeout} from "../../../shared/utils/withTimeout.tsx";
+import ErrorBox from "../../../components/common/ErrorBox.tsx";
 
 
 interface MonthDetailProps {
@@ -28,6 +31,8 @@ type EventsByMonthAndDay = {
     };
 };
 
+type FetchStatus = 'loading ' | 'error' | 'timeout' | 'idle';
+
 const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, onDayClick}) => {
     const containerRef = useDragScroll<HTMLDivElement>();
 
@@ -37,22 +42,41 @@ const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, 
     const isInitialScroll = useRef(true);
     const [yearEvents, setYearEvents] = useState<CalendarEvent[]>([]);
 
+    // Estados para carregamento
+    const [status, setStatus] = useState<FetchStatus>('loading ')
+    const [retryKey, setRetryKey] = useState(0);
+
+    //Carrega os eventos do ano
     useEffect(() => {
+        let cancelled = false;
+
         const fetchYearEvents = async () => {
+            setStatus('loading ');
             try {
-                const allPromises = Array.from({length: 12}, (_, i) =>
+                const allPromises = Array.from({ length: 12 }, (_, i) =>
                     eventsApi.getEventsByMonth(year, i)
                 );
-                const allData = await Promise.all(allPromises);
-                const flatData = allData.flat();
-                setYearEvents(flatData);
-            } catch (error) {
-                console.error('Erro ao carregar eventos:', error);
-                setYearEvents([]);
+
+                // Promise.all envolto no timeout de 15s
+                const allData = await withTimeout(Promise.all(allPromises), 15_000);
+
+                if (!cancelled) {
+                    setYearEvents(allData.flat());
+                    setStatus('idle');
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    const isTimeout = err instanceof Error && err.message === 'TIMEOUT';
+                    setStatus(isTimeout ? 'timeout' : 'error');
+                    setYearEvents([]);
+                }
             }
         };
+
         fetchYearEvents();
-    }, [year]);
+        return () => { cancelled = true; };
+    }, [year, retryKey]);
+
 
 // Agrupar eventos por dia
     const eventsByMonthAndDay = useMemo<EventsByMonthAndDay>(() => {
@@ -123,9 +147,22 @@ const MonthViewPortrait: React.FC<MonthDetailProps> = ({year, monthIdx, onBack, 
         const rect = e.currentTarget.getBoundingClientRect();
         onDayClick(mIdx, d, rect);
     };
+    const handleRetry    = () => setRetryKey(k => k + 1);
+    const handleContinue = () => setStatus('idle');
 
     return (
         <div className="flex-1 flex flex-col bg-white h-full relative z-50 dark:bg-zinc-950 transition-colors">
+
+            {/*Tela de Carregamento*/}
+            <LoadingOverlay isLoading={status === 'loading '} />
+
+            {(status === 'error' || status === 'timeout') && (
+                <ErrorBox
+                    isTimeout={status === 'timeout'}
+                    onRetry={handleRetry}
+                    onContinue={handleContinue}
+                />
+            )}
 
             {/* HEADER FIXO */}
             <div
