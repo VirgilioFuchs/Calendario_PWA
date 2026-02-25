@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '../types';
 import { eventCache } from './eventCacheIDB';
 
-const API_URL = "http://192.168.70.163:8000"; // Windows
+const API_URL = "https://192.168.70.163:8000"; // Windows
 // const API_URL = "http://192.168.15.4:8000"; // MAC
 
 const parseDateLocal = (dateString: string): Date => {
@@ -14,26 +14,27 @@ export const eventsApi = {
      * Busca eventos por range de datas com cache IndexedDB + ETag
      */
     async getEventsByRange(startDate: string, endDate: string): Promise<CalendarEvent[]> {
-        // 1. Tenta buscar do cache
         const cached = await eventCache.get(startDate, endDate);
 
         if (cached) {
             console.log('Cache hit:', startDate, endDate);
-
             try {
                 const isValid = await this.revalidateCache(startDate, endDate, cached.etag);
                 if (isValid) {
                     console.log('Cache ainda válido (304)');
                     return cached.events;
                 }
+                // 200 — revalidateCache já salvou no IDB, busca o atualizado
+                const updated = await eventCache.get(startDate, endDate);
+                return updated?.events ?? [];
             } catch (error) {
                 console.warn('Erro na revalidação, usando cache:', error);
-                return cached.events;
+                return cached.events; // fallback offline
             }
         }
 
-        // 2. Cache miss ou expirado: busca da API
-        console.log('Buscando da API:', startDate, endDate);
+        // ✅ cache miss — busca da API
+        console.log('Cache miss, buscando da API:', startDate, endDate);
         return this.fetchFromAPI(startDate, endDate);
     },
 

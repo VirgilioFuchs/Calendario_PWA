@@ -1,18 +1,44 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import mkcert from 'vite-plugin-mkcert'
 import { VitePWA } from 'vite-plugin-pwa'
 
 
-// https://vite.dev/config/
 export default defineConfig({
     plugins: [
         react(),
+        mkcert(),
 
         VitePWA({
+            strategies: 'generateSW',
             registerType: 'autoUpdate',
 
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                runtimeCaching: [
+                    {
+                        urlPattern:/\/api\/events_list_cache/,
+                        handler: 'StaleWhileRevalidate',
+                        options: {
+                            cacheName: 'events-api-cache',
+                            expiration: {
+                                maxEntries: 50,
+                                maxAgeSeconds: 3 * 24 * 60 * 60,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                    {
+                        urlPattern: /\/health/,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'health-cache',
+                            networkTimeoutSeconds: 3,
+                        },
+                    },
+                ],
             },
 
             manifest: {
@@ -42,6 +68,9 @@ export default defineConfig({
                     }
                 ],
             },
+            devOptions: {
+                enabled: true
+            }
         }),
     ],
     server:  {
@@ -50,7 +79,6 @@ export default defineConfig({
         allowedHosts: [
             'localhost',
             '127.0.0.1',
-            'architraved-meghann-legibly.ngrok-free.dev'
         ]
     }
 })

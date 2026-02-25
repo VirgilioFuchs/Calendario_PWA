@@ -22,7 +22,7 @@ const App: React.FC = () => {
     const fullYear = today.getFullYear();
 
     // Calendário Estado
-    const [navLevel, setNavLevel] = useState<NavLevel>('year_list');
+    const [navLevel, setNavLevel] = useState<NavLevel>('month_detail');
     const [previousNavLevel, setPreviousNavLevel] = useState<'month_detail' | 'day_detail'>('month_detail');
     const [initialEventId, setInitialEventId] = useState<number | null>(null);
     const [year, setYear] = useState(fullYear);

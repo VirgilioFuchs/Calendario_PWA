@@ -35,7 +35,7 @@ type EventsByMonthAndDay = {
     };
 };
 
-type FetchStatus = 'loading ' | 'error' | 'timeout' | 'idle';
+type FetchStatus = 'loading' | 'error' | 'timeout' | 'idle';
 
 const MonthViewLandscape: React.FC<MonthDetailProps> = ({
                                                             year,
@@ -54,24 +54,32 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
     const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dia'>('eventos');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const isInitialScroll = useRef(true);
-    const [status, setStatus] = useState<FetchStatus>('loading ')
+    const [status, setStatus] = useState<FetchStatus>('loading')
     const [retryKey, setRetryKey] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
 
         const fetchYearEvents = async () => {
-            setStatus('loading ');
+            setStatus('loading');
             try {
-                const allPromises = Array.from({ length: 12 }, (_, i) =>
-                    eventsApi.getEventsByMonth(year, i)
-                );
+                const results: CalendarEvent[][] = [];
 
-                // Promise.all envolto no timeout de 15s
-                const allData = await withTimeout(Promise.all(allPromises), 15_000);
+                // Lotes de 3 meses por vez
+                for (let i = 0; i < 12; i += 3) {
+                    const batch = await withTimeout(
+                        Promise.all([
+                            eventsApi.getEventsByMonth(year, i),
+                            eventsApi.getEventsByMonth(year, i + 1),
+                            eventsApi.getEventsByMonth(year, i + 2),
+                        ]),
+                        15_000
+                    );
+                    results.push(...batch);
+                }
 
                 if (!cancelled) {
-                    setYearEvents(allData.flat());
+                    setYearEvents(results.flat());
                     setStatus('idle');
                 }
             } catch (err) {
@@ -202,7 +210,7 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
         <div className="relative flex flex-col h-full bg-white dark:bg-zinc-950/95">
 
             {/* Tela de carregamento */}
-            <LoadingOverlay isLoading={status === 'loading '} />
+            <LoadingOverlay isLoading={status === 'loading'} />
 
             {(status === 'error' || status === 'timeout') && (
                 <ErrorBox
