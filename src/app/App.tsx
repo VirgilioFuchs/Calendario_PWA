@@ -367,7 +367,6 @@ const App: React.FC = () => {
                         currentMonthIdx={selectedMonthIdx}
                         selectedDay={selectedDay}
                         onSelectDay={handleChangeDate}
-                        orientation="horizontal"
                         className={showLegend ? 'bottom-12 border-t border-gray-200 dark:border-zinc-800' : 'bottom-0'}
                     />
                 )}

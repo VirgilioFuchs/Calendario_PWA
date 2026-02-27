@@ -53,10 +53,12 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
     const [selectedClickedMonthIdx, setSelectedClickedMonthIdx] = useState<number>(monthIdx);
     const [activeTab, setActiveTab] = useState<'legendas' | 'eventos' | 'dia'>('eventos');
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const isInitialScroll = useRef(true);
+    const lastPropUpdate = useRef<{monthIdx: number, day: number}>({ monthIdx, day: selectedDay });
+    const ignoreObserverUntil = useRef<number>(Date.now() + 500);
     const [status, setStatus] = useState<FetchStatus>('loading')
     const [retryKey, setRetryKey] = useState(0);
 
+    // API Eventos
     useEffect(() => {
         let cancelled = false;
 
@@ -115,29 +117,22 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
         return grouped;
     }, [yearEvents]);
 
+    // Scroll
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                if (Date.now() < ignoreObserverUntil.current) return;
 
-                    const idx = Number(
-                        (entry.target as HTMLElement).dataset.monthIndex
-                    );
-                    if (!Number.isNaN(idx)) {
-                        setVisibleMonthIdx(idx);
-                    }
-                });
-            },
-            {
-                root: container,
-                rootMargin: '-40% 0px -40% 0px',
-                threshold: 0,
-            }
-        );
+                const idx = Number((entry.target as HTMLElement).dataset.monthIndex);
+                if (!Number.isNaN(idx)) {
+                    setVisibleMonthIdx(idx);
+                }
+            });
+        }, { root: container, rootMargin: '-40% 0px -40% 0px', threshold: 0 });
 
         const sections = container.querySelectorAll<HTMLElement>('.month-grid-section');
         sections.forEach((section) => observer.observe(section));
@@ -148,25 +143,41 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
 
     // Scroll inicial para o mês selecionado
     useEffect(() => {
-        setVisibleMonthIdx(monthIdx);
-        isInitialScroll.current = true;
+        if (monthIdx !== lastPropUpdate.current.monthIdx || selectedDay !== lastPropUpdate.current.day) {
 
-        const timeoutId = setTimeout(() => {
-            const section = document.getElementById(`month-detail-section-${monthIdx}`);
-            if (section && containerRef.current) {
-                containerRef.current.scrollTop = section.offsetTop;
-                setTimeout(() => {
-                    isInitialScroll.current = false;
-                }, 100);
-            }
-        }, 50);
+            ignoreObserverUntil.current = Date.now() + 500;
+            lastPropUpdate.current = { monthIdx, day: selectedDay };
 
-        return () => clearTimeout(timeoutId)
-    }, [containerRef, monthIdx]);
+            setSelectedClickedDay(selectedDay);
+            setSelectedClickedMonthIdx(monthIdx);
+            setVisibleMonthIdx(monthIdx);
+
+            const timer = setTimeout(() => {
+                const section = document.getElementById(`month-detail-section-${monthIdx}`);
+                if (section && containerRef.current) {
+                    containerRef.current.scrollTo({ top: section.offsetTop, behavior: 'auto' });
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        } else {
+            const timer = setTimeout(() => {
+                const section = document.getElementById(`month-detail-section-${monthIdx}`);
+                if (section && containerRef.current) {
+                    containerRef.current.scrollTop = section.offsetTop;
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [monthIdx, selectedDay]);
 
     useEffect(() => {
-        containerRef.current?.scrollTo({top: 0, behavior: 'smooth'});
-    }, [activeTab]);
+        if (Date.now() < ignoreObserverUntil.current) return;
+
+        if (selectedClickedMonthIdx !== visibleMonthIdx) {
+            setSelectedClickedDay(1);
+            setSelectedClickedMonthIdx(visibleMonthIdx);
+        }
+    }, [visibleMonthIdx]);
 
     // Ordena eventos do dia pelo horário
     const sortedDayEvents = useMemo(() => {
@@ -182,12 +193,6 @@ const MonthViewLandscape: React.FC<MonthDetailProps> = ({
         });
     }, [eventsByMonthAndDay, selectedClickedDay, selectedClickedMonthIdx]);
 
-    // Na troca do mês, o index vai para o dia 1
-    useEffect(() => {
-        if (isInitialScroll.current) return;
-        setSelectedClickedDay(1);
-        setSelectedClickedMonthIdx(visibleMonthIdx);
-    }, [visibleMonthIdx]);
 
     const handleDayClick = (_e: React.MouseEvent, mIdx: number, d: number) => {
         setSelectedClickedDay(d);
