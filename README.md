@@ -1,6 +1,6 @@
-# Calendario PWA (Calendario Anglo)
+# Calendar PWA (Anglo Calendar)
 
-Aplicação React + Vite para visualização de calendário acadêmico em formato **ano**, **mês**, **dia** e **detalhe de evento**, com suporte a **PWA**, cache em **Service Worker** e cache local em **IndexedDB**.
+React + Vite application for viewing an academic calendar in **year**, **month**, **day**, and **event detail** formats, with **PWA** support, **Service Worker** caching, and local **IndexedDB** cache.
 
 ## Stack
 
@@ -10,14 +10,14 @@ Aplicação React + Vite para visualização de calendário acadêmico em format
 - Framer Motion
 - ESLint 9
 - vite-plugin-pwa
-- IndexedDB (cache local de eventos)
+- IndexedDB (local event cache)
 
-## Requisitos
+## Requirements
 
-- Node.js 20+ (recomendado)
+- Node.js 20+ (recommended)
 - npm
 
-## Instalação
+## Installation
 
 ```bash
 npm ci
@@ -26,85 +26,85 @@ npm ci
 ## Scripts
 
 ```bash
-npm run dev      # ambiente de desenvolvimento
-npm run build    # build de produção (tsc + vite)
-npm run lint     # lint com ESLint
-npm run preview  # preview local do build
+npm run dev      # development environment
+npm run build    # production build (tsc + vite)
+npm run lint     # ESLint
+npm run preview  # local build preview
 ```
 
-## Estrutura do projeto
+## Project structure
 
 ```text
 src/
-  app/                    # composição principal da aplicação
-  components/common/      # componentes compartilhados de UI
+  app/                    # main app composition
+  components/common/      # shared UI components
   features/
-    year/                 # visualização anual
-    month/                # visualização mensal
-    day/                  # visualização diária
-    event/                # detalhe de evento
+    year/                 # yearly view
+    month/                # monthly view
+    day/                  # daily view
+    event/                # event detail
   shared/
-    hooks/                # hooks reutilizáveis
-    services/             # integração com API e cache
-    types/                # tipagens e constantes de domínio
-    utils/                # funções utilitárias de data/evento
+    hooks/                # reusable hooks
+    services/             # API and cache integration
+    types/                # domain types and constants
+    utils/                # date/event utility functions
 ```
 
-## Fluxo de navegação
+## Navigation flow
 
-O estado principal fica em `src/app/App.tsx` e controla os níveis:
+The main state is in `src/app/App.tsx` and controls these levels:
 
 - `year_list`
 - `month_detail`
 - `day_detail`
 - `event_detail`
 
-Também controla:
+It also controls:
 
-- tema claro/escuro (com persistência em `localStorage`)
-- orientação (`portrait`/`landscape`)
-- transições com Framer Motion
+- light/dark theme (persisted in `localStorage`)
+- orientation (`portrait`/`landscape`)
+- Framer Motion transitions
 
-## Dados e API
+## Data and API
 
-As chamadas estão em `src/shared/services`:
+Requests are in `src/shared/services`:
 
-- `apiCache.ts`: serviço principal com busca por intervalo + revalidação por ETag
-- `eventCacheIDB.ts`: cache em IndexedDB com expiração
-- `apiNoCache.ts`: alternativa sem cache
+- `apiCache.ts`: main service with range fetch + ETag revalidation
+- `eventCacheIDB.ts`: IndexedDB cache with expiration
+- `apiNoCache.ts`: no-cache alternative
 
-### Endpoint esperado
+### Expected endpoints
 
-O app espera uma API com rotas como:
+The app expects an API with routes like:
 
 - `GET /api/events_list_cache?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 - `GET /events_list`
 - `POST /events_create`
 - `GET /health`
 
-> Observação: as URLs base estão hardcoded nos arquivos de serviço e devem ser ajustadas para o ambiente em uso.
+> Note: base URLs are hardcoded in service files and should be adjusted for your environment.
 
-## PWA e cache
+## PWA and cache
 
-Configurado em `vite.config.ts` com `vite-plugin-pwa`:
+Configured in `vite.config.ts` with `vite-plugin-pwa`:
 
-- estratégia `generateSW`
-- registro `autoUpdate`
-- cache de runtime para API e healthcheck
+- `generateSW` strategy
+- `autoUpdate` registration
+- runtime caching for API and healthcheck
 
-## Estado atual conhecido
+## Known current status
 
-- Não há suíte de testes automatizados no `package.json`.
-- `npm run build` está funcionando.
-- `npm run lint` apresenta erros já existentes no código-base.
+- There is no automated test suite in `package.json`.
+- `npm run build` is working.
+- `npm run lint` has pre-existing errors in the codebase.
 
-## Branches revisadas (codex excluídas)
+## Reviewed branches (excluding codex)
 
-As branches abaixo foram lidas no remoto, excluindo explicitamente branches `codex/*`:
+The branches below were reviewed remotely, explicitly excluding `codex/*` branches:
 
-- `master` — base atual (mesmo commit da branch `copilot/add-project-documentation` neste momento).
-- `agenda1.1` — evolução inicial com muitas alterações estruturais e README padrão do template Vite.
-- `agenda2.0` — continuação da evolução visual, também com README padrão do template Vite.
-- `agenda3.0` — versão posterior com reorganização de componentes e merge de otimizações.
-- `copilot/add-documentation-for-repository` — branch focada em documentação (README completo).
-- `copilot/add-project-documentation` — branch de trabalho atual.
+- `master` — current base (same commit as `copilot/add-project-documentation` at that time).
+- `agenda1.1` — initial evolution with many structural changes and the default Vite template README.
+- `agenda2.0` — visual evolution continuation, also with the default Vite template README.
+- `agenda3.0` — later version with component reorganization and optimization merges.
+- `copilot/add-documentation-for-repository` — documentation-focused branch (full README).
+- `copilot/add-project-documentation` — current working branch.
