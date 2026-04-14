@@ -73,7 +73,7 @@ Requests are in `src/shared/services`:
 - `eventCacheIDB.ts`: IndexedDB cache with expiration
 - `apiNoCache.ts`: no-cache alternative
 
-### Expected endpoints
+### Expected endpoint
 
 The app expects an API with routes like:
 
